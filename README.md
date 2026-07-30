@@ -1,32 +1,24 @@
-# MyMobileApp
+# MyMobileApp — version enrichie
 
-Ébauche d'une application mobile web modulaire.
+Tous les fichiers sont placés à la racine pour faciliter la publication sur GitHub Pages.
 
-## Fonctionnalités disponibles
+## Fonctionnalités
+- animations fluides inspirées d’iOS ;
+- graphiques interactifs mensuels et annuels ;
+- historique, recherche et filtres ;
+- mode clair et sombre ;
+- export/import JSON ;
+- fonctionnement hors ligne ;
+- PWA installable sur iPhone ;
+- stockage local dans le navigateur.
 
-- suivi des revenus et dépenses par mois ;
-- ajout et suppression d'opérations ;
-- budget global mensuel ;
-- thème clair/sombre ;
-- stockage local avec `localStorage` ;
-- export et import d'une sauvegarde JSON ;
-- interface mobile compatible iPhone.
+## Publication GitHub Pages
+Envoyer tous les fichiers à la racine du dépôt, puis activer **Settings → Pages → Deploy from a branch → main → /(root)**.
 
-## Utilisation sur iPhone
+## Installation sur iPhone
+Après publication en HTTPS :
+1. ouvrir l’adresse dans Safari ;
+2. toucher Partager ;
+3. choisir Ajouter à l’écran d’accueil.
 
-1. Décompresser l'archive.
-2. Ouvrir `index.html` dans un éditeur ou un hébergement statique.
-3. Pour une utilisation simple sans serveur, le stockage local fonctionne dans le navigateur.
-4. Pour l'installation comme PWA, placer le dossier sur un hébergement HTTPS statique.
-
-## Évolution prévue
-
-L'architecture peut ensuite accueillir d'autres modules :
-- listes de courses ;
-- tâches ;
-- stock ;
-- véhicule ;
-- facturation ;
-- statistiques avancées.
-
-La prochaine étape recommandée est le remplacement de `localStorage` par IndexedDB et l'ajout d'un véritable système de modules.
+Le service worker permet ensuite l’ouverture hors ligne.

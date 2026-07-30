@@ -3,67 +3,132 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#111827" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="MyMobileApp" />
   <title>MyMobileApp</title>
   <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="apple-touch-icon" href="icon-192.svg" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
       <div>
         <p class="eyebrow">MyMobileApp</p>
-        <h1>Budget mensuel</h1>
+        <h1 id="pageTitle">Tableau de bord</h1>
       </div>
-      <button id="themeToggle" class="icon-button" aria-label="Changer le thème">◐</button>
+      <div class="topbar-actions">
+        <button id="installButton" class="icon-button install-button" hidden aria-label="Installer l’application">⇩</button>
+        <button id="themeToggle" class="icon-button" aria-label="Changer le thème">◐</button>
+      </div>
     </header>
 
     <main>
-      <section class="month-switcher card">
+      <section class="month-switcher card reveal">
         <button id="prevMonth" class="icon-button" aria-label="Mois précédent">‹</button>
-        <div class="month-center">
+        <button id="monthPickerButton" class="month-center" aria-label="Choisir un mois">
           <span class="muted">Période</span>
           <strong id="currentMonthLabel"></strong>
-        </div>
+        </button>
         <button id="nextMonth" class="icon-button" aria-label="Mois suivant">›</button>
       </section>
 
-      <section class="summary-grid">
-        <article class="summary-card">
+      <section class="summary-grid reveal">
+        <article class="summary-card tappable" data-focus="income">
           <span>Revenus</span>
           <strong id="incomeTotal">0 €</strong>
+          <small id="incomeDelta">Ce mois</small>
         </article>
-        <article class="summary-card">
+        <article class="summary-card tappable" data-focus="expense">
           <span>Dépenses</span>
           <strong id="expenseTotal">0 €</strong>
+          <small id="expenseDelta">Ce mois</small>
         </article>
         <article class="summary-card balance-card">
           <span>Reste disponible</span>
           <strong id="balanceTotal">0 €</strong>
+          <small id="savingRate">Épargne 0%</small>
         </article>
       </section>
 
-      <section class="card progress-card">
+      <section class="card progress-card reveal">
         <div class="section-heading">
           <div>
             <span class="muted">Budget global</span>
             <h2 id="budgetStatus">0 € sur 0 €</h2>
           </div>
-          <strong id="budgetPercent">0%</strong>
+          <button id="editBudget" class="text-button"><strong id="budgetPercent">0%</strong></button>
         </div>
         <div class="progress-track">
           <div id="budgetProgress" class="progress-fill"></div>
         </div>
       </section>
 
-      <section class="card">
+      <section class="card chart-card reveal">
         <div class="section-heading">
           <div>
-            <span class="muted">Opérations</span>
-            <h2>Derniers mouvements</h2>
+            <span class="muted">Analyse</span>
+            <h2>Évolution du budget</h2>
+          </div>
+          <div class="segmented-control" id="chartRange">
+            <button class="active" data-range="monthly">Mensuel</button>
+            <button data-range="annual">Annuel</button>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <svg id="trendChart" viewBox="0 0 640 260" role="img" aria-label="Graphique des revenus et dépenses"></svg>
+          <div id="chartTooltip" class="chart-tooltip" hidden></div>
+        </div>
+        <div class="chart-legend">
+          <span><i class="legend-dot income-dot"></i>Revenus</span>
+          <span><i class="legend-dot expense-dot"></i>Dépenses</span>
+        </div>
+      </section>
+
+      <section class="card reveal">
+        <div class="section-heading">
+          <div>
+            <span class="muted">Répartition</span>
+            <h2>Dépenses par catégorie</h2>
+          </div>
+        </div>
+        <div class="category-layout">
+          <div id="donutChart" class="donut-chart" aria-label="Répartition des dépenses">
+            <div class="donut-center">
+              <strong id="donutTotal">0 €</strong>
+              <span>Dépensé</span>
+            </div>
+          </div>
+          <div id="categoryLegend" class="category-legend"></div>
+        </div>
+      </section>
+
+      <section class="card reveal">
+        <div class="section-heading search-heading">
+          <div>
+            <span class="muted">Historique</span>
+            <h2>Opérations</h2>
           </div>
           <button id="openTransactionModal" class="primary-button">+ Ajouter</button>
         </div>
+
+        <div class="search-panel">
+          <label class="search-box">
+            <span>⌕</span>
+            <input id="searchInput" type="search" placeholder="Rechercher une opération…" />
+          </label>
+          <select id="typeFilter" aria-label="Filtrer par type">
+            <option value="all">Tous</option>
+            <option value="expense">Dépenses</option>
+            <option value="income">Revenus</option>
+          </select>
+          <select id="categoryFilter" aria-label="Filtrer par catégorie">
+            <option value="all">Toutes catégories</option>
+          </select>
+        </div>
+
         <div id="transactionList" class="transaction-list"></div>
         <div id="emptyState" class="empty-state">
           <div class="empty-icon">◎</div>
@@ -72,11 +137,11 @@
         </div>
       </section>
 
-      <section class="card settings-card">
+      <section class="card settings-card reveal">
         <div class="section-heading">
           <div>
             <span class="muted">Données</span>
-            <h2>Sauvegarde</h2>
+            <h2>Sauvegarde et restauration</h2>
           </div>
         </div>
         <div class="action-grid">
@@ -85,27 +150,26 @@
             Importer JSON
             <input id="importData" type="file" accept="application/json" hidden />
           </label>
+          <button id="seedDemo" class="secondary-button">Ajouter des données démo</button>
           <button id="resetData" class="danger-button">Réinitialiser</button>
         </div>
       </section>
     </main>
 
+    <button id="floatingAdd" class="floating-add" aria-label="Ajouter une opération">+</button>
+
     <nav class="bottom-nav" aria-label="Navigation principale">
-      <button class="nav-item active" data-page="budget">
-        <span>⌂</span>
-        <small>Budget</small>
+      <button class="nav-item active" data-section="dashboard">
+        <span>⌂</span><small>Accueil</small>
       </button>
-      <button class="nav-item" data-page="stats" disabled>
-        <span>◔</span>
-        <small>Stats</small>
+      <button class="nav-item" data-section="history">
+        <span>≡</span><small>Historique</small>
       </button>
-      <button class="nav-item" data-page="modules" disabled>
-        <span>▦</span>
-        <small>Modules</small>
+      <button class="nav-item" data-section="analytics">
+        <span>◔</span><small>Stats</small>
       </button>
-      <button class="nav-item" data-page="settings">
-        <span>⚙</span>
-        <small>Réglages</small>
+      <button class="nav-item" data-section="settings">
+        <span>⚙</span><small>Réglages</small>
       </button>
     </nav>
   </div>
@@ -119,45 +183,30 @@
         </div>
         <button type="button" id="closeTransactionModal" class="icon-button">×</button>
       </div>
+      <div class="type-switch">
+        <button type="button" class="active" data-type="expense">Dépense</button>
+        <button type="button" data-type="income">Revenu</button>
+      </div>
+      <input id="transactionType" type="hidden" value="expense" />
 
-      <label>
-        Type
-        <select id="transactionType" required>
-          <option value="expense">Dépense</option>
-          <option value="income">Revenu</option>
-        </select>
-      </label>
-
-      <label>
-        Libellé
+      <label>Libellé
         <input id="transactionLabel" type="text" maxlength="60" placeholder="Ex. Courses" required />
       </label>
-
-      <label>
-        Montant
-        <input id="transactionAmount" type="number" min="0.01" step="0.01" placeholder="0,00" required />
+      <label>Montant
+        <div class="money-input">
+          <input id="transactionAmount" type="number" min="0.01" step="0.01" placeholder="0,00" required />
+          <span>€</span>
+        </div>
       </label>
-
-      <label>
-        Catégorie
-        <select id="transactionCategory" required>
-          <option>Alimentation</option>
-          <option>Logement</option>
-          <option>Transport</option>
-          <option>Factures</option>
-          <option>Santé</option>
-          <option>Loisirs</option>
-          <option>Épargne</option>
-          <option>Revenu</option>
-          <option>Autres</option>
-        </select>
+      <label>Catégorie
+        <select id="transactionCategory" required></select>
       </label>
-
-      <label>
-        Date
+      <label>Date
         <input id="transactionDate" type="date" required />
       </label>
-
+      <label>Note
+        <textarea id="transactionNote" maxlength="120" placeholder="Optionnel"></textarea>
+      </label>
       <div class="modal-actions">
         <button type="button" id="cancelTransaction" class="secondary-button">Annuler</button>
         <button type="submit" class="primary-button">Enregistrer</button>
@@ -165,6 +214,36 @@
     </form>
   </dialog>
 
-  <script src="js/app.js"></script>
+  <dialog id="budgetModal" class="modal small-modal">
+    <form id="budgetForm" method="dialog" class="modal-content">
+      <div class="modal-header">
+        <div><span class="muted">Réglage</span><h2>Budget mensuel</h2></div>
+        <button type="button" id="closeBudgetModal" class="icon-button">×</button>
+      </div>
+      <label>Montant maximum
+        <div class="money-input">
+          <input id="budgetInput" type="number" min="0" step="10" required />
+          <span>€</span>
+        </div>
+      </label>
+      <button type="submit" class="primary-button">Mettre à jour</button>
+    </form>
+  </dialog>
+
+  <dialog id="monthModal" class="modal small-modal">
+    <form id="monthForm" method="dialog" class="modal-content">
+      <div class="modal-header">
+        <div><span class="muted">Navigation</span><h2>Choisir une période</h2></div>
+        <button type="button" id="closeMonthModal" class="icon-button">×</button>
+      </div>
+      <label>Mois
+        <input id="monthInput" type="month" required />
+      </label>
+      <button type="submit" class="primary-button">Afficher</button>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="app.js"></script>
 </body>
 </html>
