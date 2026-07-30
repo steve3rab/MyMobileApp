@@ -1,14 +1,9 @@
-# MyMobileApp — IndexedDB
+# MyMobileApp Stevens v6
 
-Cette version stocke les opérations dans IndexedDB et migre automatiquement les anciennes données localStorage.
-
-Corrections : bouton Aujourd’hui, blocage des mois futurs, suppression des démos/seeds et du bouton de réinitialisation, bouton + placé au-dessus de la barre de navigation.
-
-
-## Version UI v5
-- composants et espacements harmonisés ;
-- espace renforcé entre l’en-tête et la période ;
-- ajout de « - Stevens » dans le titre ;
-- formulaire mobile corrigé, notamment le champ date ;
-- boutons Dépense/Revenu en pleine largeur ;
-- catégories familiales ajoutées.
+- Budget du mois à la place des revenus
+- Budget enregistré séparément pour chaque mois
+- Opérations limitées aux dépenses
+- Calculs, graphique et libellés harmonisés
+- Validation et gestion d’erreurs renforcées
+- Bouton + descendu tout en restant au-dessus de la barre de navigation
+- Cache PWA v6
