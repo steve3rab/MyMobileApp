@@ -531,14 +531,41 @@ $("#monthPickerButton").onclick=()=>{elements.monthInput.value=state.selectedMon
 $("#closeMonthModal").onclick=()=>elements.monthModal.close();
 $("#monthForm").onsubmit=async event=>{event.preventDefault();await selectMonth(elements.monthInput.value);elements.monthModal.close();};
 document.querySelectorAll("#chartRange button").forEach(button=>button.onclick=()=>{state.chartRange=button.dataset.range;document.querySelectorAll("#chartRange button").forEach(item=>item.classList.toggle("active",item===button));renderTrendChart();});
-document.querySelectorAll(".nav-item").forEach(button=>button.onclick=()=>{document.querySelectorAll(".nav-item").forEach(item=>item.classList.toggle("active",item===button));const map={dashboard:"#periodSection",analytics:"#statsSection",history:"#historySection",agenda:"#agendaSection",settings:"#settingsSection"};document.querySelector(map[button.dataset.section])?.scrollIntoView({behavior:"smooth",block:"start"});});
+document.querySelectorAll(".nav-item").forEach(button=>button.onclick=()=>{document.querySelectorAll(".nav-item").forEach(item=>item.classList.toggle("active",item===button));const map={dashboard:"#periodSection",analytics:"#statsSection",history:"#historySection",settings:"#settingsSection"};document.querySelector(map[button.dataset.section])?.scrollIntoView({behavior:"smooth",block:"start"});});
 document.querySelector('[data-focus="expense"]').onclick=()=>{document.querySelector(".search-heading")?.scrollIntoView({behavior:"smooth"});};
 
 window.addEventListener("beforeinstallprompt",event=>{event.preventDefault();state.deferredPrompt=event;$("#installButton").hidden=false;});
 $("#installButton").onclick=async()=>{if(!state.deferredPrompt)return;state.deferredPrompt.prompt();await state.deferredPrompt.userChoice;state.deferredPrompt=null;$("#installButton").hidden=true;};
 if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js").catch(console.error));
 
-async function initialize(){try{await migrateLegacyLocalStorage(LEGACY_STORAGE_KEY);await loadRecurringExpenses();state.agenda=normalizeAgenda(await getSetting(AGENDA_KEY,null));renderAgenda();state.transactions=(await getAllTransactions()).filter(item=>item.type!=="income");await materializeRecurringExpenses(state.selectedMonth);state.budgetLimit=await loadBudget(state.selectedMonth);render();}catch(error){console.error(error);showToast("Impossible de charger les données locales");render();}}
+
+function showPortal(){
+  $("#portalSection").hidden=false;
+  $("#budgetModule").hidden=true;
+  $("#agendaModule").hidden=true;
+  $("#settingsModule").hidden=true;
+  $("#budgetNav").hidden=true;
+  $("#floatingAdd").hidden=true;
+  $("#backToPortal").hidden=true;
+  $("#pageTitle").innerHTML='Mes applications <span class="title-owner">- Stevens</span>';
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function openModule(name){
+  $("#portalSection").hidden=true;
+  $("#budgetModule").hidden=name!=="budget";
+  $("#agendaModule").hidden=name!=="agenda";
+  $("#settingsModule").hidden=name!=="budget";
+  $("#budgetNav").hidden=name!=="budget";
+  $("#floatingAdd").hidden=name!=="budget";
+  $("#backToPortal").hidden=false;
+  $("#pageTitle").innerHTML=name==="budget"?'MyBudget <span class="title-owner">- Stevens</span>':'MyAgenda <span class="title-owner">- Stevens</span>';
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+$("#openBudgetModule").addEventListener("click",()=>openModule("budget"));
+$("#openAgendaModule").addEventListener("click",()=>openModule("agenda"));
+$("#backToPortal").addEventListener("click",showPortal);
+
+async function initialize(){try{await migrateLegacyLocalStorage(LEGACY_STORAGE_KEY);await loadRecurringExpenses();state.agenda=normalizeAgenda(await getSetting(AGENDA_KEY,null));renderAgenda();state.transactions=(await getAllTransactions()).filter(item=>item.type!=="income");await materializeRecurringExpenses(state.selectedMonth);state.budgetLimit=await loadBudget(state.selectedMonth);render();showPortal();}catch(error){console.error(error);showToast("Impossible de charger les données locales");render();showPortal();}}
 
 // Empêche le zoom par pincement et le double-tap dans la PWA iOS.
 ["gesturestart", "gesturechange", "gestureend"].forEach(eventName => {

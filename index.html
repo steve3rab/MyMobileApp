@@ -20,12 +20,34 @@
         <h1 id="pageTitle">Tableau de bord <span class="title-owner">- Stevens</span></h1>
       </div>
       <div class="topbar-actions">
+        <button id="backToPortal" class="icon-button" hidden aria-label="Retour au menu">‹</button>
         <button id="installButton" class="icon-button install-button" hidden aria-label="Installer l’application">⇩</button>
         <button id="themeToggle" class="icon-button" aria-label="Changer le thème">◐</button>
       </div>
     </header>
 
     <main>
+      <section id="portalSection" class="portal-view reveal">
+        <div class="portal-hero">
+          <span class="muted">Bienvenue Stevens</span>
+          <h2>Que souhaites-tu ouvrir ?</h2>
+          <p>Choisis un module pour accéder à tes outils.</p>
+        </div>
+        <div class="module-grid">
+          <button id="openBudgetModule" class="module-card" type="button">
+            <span class="module-icon">€</span>
+            <span><strong>MyBudget</strong><small>Budget, dépenses, statistiques et historique</small></span>
+            <b>›</b>
+          </button>
+          <button id="openAgendaModule" class="module-card" type="button">
+            <span class="module-icon">▦</span>
+            <span><strong>MyAgenda</strong><small>Horaires de Parent 1, Parent 2 et Enfant 1</small></span>
+            <b>›</b>
+          </button>
+        </div>
+      </section>
+
+      <div id="budgetModule" class="module-view" hidden>
       <section id="periodSection" class="month-switcher card reveal">
         <button id="prevMonth" class="icon-button" aria-label="Mois précédent">‹</button>
         <button id="monthPickerButton" class="month-center" aria-label="Choisir un mois">
@@ -133,7 +155,9 @@
         </div>
       </section>
 
+      </div>
 
+      <div id="agendaModule" class="module-view" hidden>
       <section id="agendaSection" class="card agenda-card reveal">
         <div class="section-heading">
           <div>
@@ -145,7 +169,9 @@
         <p class="agenda-help">Renseigne les horaires du lundi au vendredi pour chaque membre de la famille.</p>
         <div id="agendaGrid" class="agenda-grid" aria-label="Horaires hebdomadaires"></div>
       </section>
+      </div>
 
+      <div id="settingsModule" class="module-view" hidden>
       <section id="settingsSection" class="card settings-card reveal">
         <div class="section-heading">
           <div>
@@ -162,11 +188,12 @@
           <button id="purgeDatabase" class="danger-button wide-action" type="button">Purger la base locale</button>
         </div>
       </section>
+      </div>
     </main>
 
-    <button id="floatingAdd" class="floating-add" aria-label="Ajouter une opération">+</button>
+    <button id="floatingAdd" hidden class="floating-add" aria-label="Ajouter une opération">+</button>
 
-    <nav class="bottom-nav" aria-label="Navigation principale">
+    <nav id="budgetNav" class="bottom-nav" aria-label="Navigation MyBudget" hidden>
       <button class="nav-item active" data-section="dashboard">
         <span>⌂</span><small>Accueil</small>
       </button>
@@ -175,9 +202,6 @@
       </button>
       <button class="nav-item" data-section="history">
         <span>≡</span><small>Historique</small>
-      </button>
-      <button class="nav-item" data-section="agenda">
-        <span>▦</span><small>Agenda</small>
       </button>
       <button class="nav-item" data-section="settings">
         <span>⚙</span><small>Réglages</small>
