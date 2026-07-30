@@ -1,9 +1,9 @@
-# MyMobileApp Stevens v6
+# MyMobileApp — Stevens v7
 
-- Budget du mois à la place des revenus
-- Budget enregistré séparément pour chaque mois
-- Opérations limitées aux dépenses
-- Calculs, graphique et libellés harmonisés
-- Validation et gestion d’erreurs renforcées
-- Bouton + descendu tout en restant au-dessus de la barre de navigation
-- Cache PWA v6
+- Zoom par pincement et double-tap bloqué sur iPhone/PWA.
+- Budget mensuel par défaut : 2 000 €.
+- Dépenses mensuelles récurrentes : cochez « Répéter chaque mois » lors de l’ajout.
+- Une dépense récurrente est créée automatiquement quand le mois est consulté.
+- Supprimer une dépense récurrente arrête également sa répétition future.
+- Catégories enrichies : assurance habitation, réparation voiture, assurance voiture, carburant, Amazon, abonnements, logement, santé et autres.
+- Cache PWA v7.

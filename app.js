@@ -10,13 +10,14 @@ import {
 
 const LEGACY_STORAGE_KEY = "myMobileApp.data.v3";
 const THEME_KEY = "myMobileApp.theme";
-const DEFAULT_BUDGET = 1500;
-const CATEGORIES = ["Alimentation","Logement","Transport","Factures","Santé","Loisirs","Épargne","Maman","Papa","Fils","Femme","Fille","Frère","Sœur","Autres"];
-const CATEGORY_COLORS = ["#4f46e5","#ef4444","#f97316","#f59e0b","#22c55e","#06b6d4","#8b5cf6","#ec4899","#3b82f6","#14b8a6","#d946ef","#f43f5e","#0ea5e9","#a855f7","#64748b"];
+const DEFAULT_BUDGET = 2000;
+const CATEGORIES = ["Alimentation", "Loyer", "Crédit immobilier", "Électricité", "Eau", "Gaz", "Internet", "Téléphone", "Assurance habitation", "Réparation maison", "Transport", "Carburant", "Péage", "Parking", "Entretien voiture", "Réparation voiture", "Assurance voiture", "Contrôle technique", "Factures", "Santé", "Pharmacie", "Mutuelle", "École", "Crèche", "Vêtements", "Courses", "Restaurant", "Loisirs", "Abonnements", "Amazon", "Netflix", "Épargne", "Impôts", "Frais bancaires", "Cadeaux", "Voyage", "Maman", "Papa", "Fils", "Femme", "Fille", "Frère", "Sœur", "Autres"];
+const CATEGORY_COLORS = ["#4f46e5", "#ef4444", "#f97316", "#f59e0b", "#22c55e", "#06b6d4", "#8b5cf6", "#ec4899", "#3b82f6", "#14b8a6", "#d946ef", "#f43f5e", "#0ea5e9", "#a855f7", "#64748b"];
 
 const $ = selector => document.querySelector(selector);
 const currentMonthKey = () => new Date().toISOString().slice(0, 7);
 const budgetKey = month => `budgetLimit:${month}`;
+const RECURRING_KEY = "recurringExpenses";
 
 const state = {
   selectedMonth: currentMonthKey(),
@@ -24,7 +25,8 @@ const state = {
   transactions: [],
   chartRange: "monthly",
   deferredPrompt: null,
-  busy: false
+  busy: false,
+  recurringExpenses: []
 };
 
 const elements = {
@@ -44,6 +46,7 @@ const elements = {
   category: $("#transactionCategory"),
   date: $("#transactionDate"),
   note: $("#transactionNote"),
+  recurring: $("#transactionRecurring"),
   search: $("#searchInput"),
   categoryFilter: $("#categoryFilter"),
   trendChart: $("#trendChart"),
@@ -111,6 +114,70 @@ async function loadBudget(month) {
   return Math.max(0, Number(legacyGlobal) || DEFAULT_BUDGET);
 }
 
+function createId() {
+  return crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function daysInMonth(monthKey) {
+  const [year, month] = monthKey.split("-").map(Number);
+  return new Date(year, month, 0).getDate();
+}
+
+function recurringDate(template, monthKey) {
+  const day = Math.min(Number(template.day) || 1, daysInMonth(monthKey));
+  return `${monthKey}-${String(day).padStart(2, "0")}`;
+}
+
+function isMonthOnOrAfter(month, startMonth) {
+  return month >= startMonth;
+}
+
+async function loadRecurringExpenses() {
+  const stored = await getSetting(RECURRING_KEY, []);
+  state.recurringExpenses = Array.isArray(stored)
+    ? stored.filter(item => item && item.id && item.label && Number(item.amount) > 0 && /^\d{4}-\d{2}$/.test(item.startMonth || ""))
+    : [];
+}
+
+async function saveRecurringExpenses() {
+  await saveSetting(RECURRING_KEY, state.recurringExpenses);
+}
+
+async function materializeRecurringExpenses(month) {
+  const existingIds = new Set(state.transactions.map(item => item.id));
+  const generated = [];
+
+  for (const template of state.recurringExpenses) {
+    if (!isMonthOnOrAfter(month, template.startMonth)) continue;
+
+    const id = `recurring:${template.id}:${month}`;
+    if (existingIds.has(id)) continue;
+
+    const transaction = await addTransaction({
+      id,
+      type: "expense",
+      label: template.label,
+      amount: template.amount,
+      category: template.category,
+      date: recurringDate(template, month),
+      note: template.note,
+      recurringId: template.id,
+      isRecurring: true,
+      createdAt: Date.now()
+    });
+
+    state.transactions.push(transaction);
+    generated.push(transaction);
+  }
+
+  return generated;
+}
+
+async function removeRecurringExpense(recurringId) {
+  state.recurringExpenses = state.recurringExpenses.filter(item => item.id !== recurringId);
+  await saveRecurringExpenses();
+}
+
 async function selectMonth(month) {
   if (!/^\d{4}-\d{2}$/.test(month) || month > currentMonthKey()) {
     showToast("Période invalide");
@@ -118,6 +185,7 @@ async function selectMonth(month) {
   }
   state.selectedMonth = month;
   state.budgetLimit = await loadBudget(month);
+  await materializeRecurringExpenses(month);
   render();
 }
 
@@ -156,7 +224,19 @@ function filteredTransactions() {
 }
 
 function categoryIcon(category) {
-  return ({Alimentation:"🛒",Logement:"⌂",Transport:"▣",Factures:"⌁",Santé:"✚",Loisirs:"◉",Épargne:"◇",Maman:"♡",Papa:"♙",Fils:"♟",Femme:"♥",Fille:"✿",Frère:"◆",Sœur:"❀",Autres:"•"})[category] ?? "•";
+  const icons = {
+    Alimentation:"🛒", Courses:"🛒", Loyer:"⌂", "Crédit immobilier":"⌂",
+    Électricité:"⚡", Eau:"💧", Gaz:"◌", Internet:"⌁", Téléphone:"☎",
+    "Assurance habitation":"⌂", "Réparation maison":"🔧", Transport:"▣",
+    Carburant:"⛽", Péage:"⇥", Parking:"P", "Entretien voiture":"🔧",
+    "Réparation voiture":"🔧", "Assurance voiture":"▣", "Contrôle technique":"✓",
+    Factures:"⌁", Santé:"✚", Pharmacie:"✚", Mutuelle:"✚", École:"▤",
+    Crèche:"◉", Vêtements:"♢", Restaurant:"◒", Loisirs:"◉",
+    Abonnements:"↻", Amazon:"a", Netflix:"N", Épargne:"◇", Impôts:"§",
+    "Frais bancaires":"€", Cadeaux:"🎁", Voyage:"✈", Maman:"♡", Papa:"♙",
+    Fils:"♟", Femme:"♥", Fille:"✿", Frère:"◆", Sœur:"❀", Autres:"•"
+  };
+  return icons[category] ?? "•";
 }
 
 function renderTransactions() {
@@ -167,7 +247,7 @@ function renderTransactions() {
     const article = document.createElement("article");
     article.className = "transaction-item";
     article.style.animationDelay = `${Math.min(index * 35, 210)}ms`;
-    article.innerHTML = `<div class="transaction-icon">${categoryIcon(item.category)}</div><div class="transaction-copy"><strong>${escapeHtml(item.label)}</strong><small>${escapeHtml(item.category)} · ${formatDate(item.date)}${item.note ? ` · ${escapeHtml(item.note)}` : ""}</small></div><div><div class="amount expense">−${currency.format(item.amount)}</div><button class="delete-transaction" data-id="${escapeHtml(item.id)}" aria-label="Supprimer">✕</button></div>`;
+    article.innerHTML = `<div class="transaction-icon">${categoryIcon(item.category)}</div><div class="transaction-copy"><strong>${escapeHtml(item.label)}${item.isRecurring ? ' <span class="recurring-badge">Mensuel</span>' : ''}</strong><small>${escapeHtml(item.category)} · ${formatDate(item.date)}${item.note ? ` · ${escapeHtml(item.note)}` : ""}</small></div><div><div class="amount expense">−${currency.format(item.amount)}</div><button class="delete-transaction" data-id="${escapeHtml(item.id)}" data-recurring-id="${escapeHtml(item.recurringId ?? '')}" aria-label="Supprimer">✕</button></div>`;
     elements.transactionList.appendChild(article);
   });
 }
@@ -229,12 +309,69 @@ function openExpenseModal() {
 function closeExpenseModal(){elements.form.reset();elements.modal.close();}
 function openBudgetModal(){elements.budgetInput.value=String(state.budgetLimit);elements.budgetModal.showModal();setTimeout(()=>elements.budgetInput.focus(),100);}
 
-async function exportData(){const payload={app:"MyMobileApp",version:6,exportedAt:new Date().toISOString(),data:{transactions:state.transactions,budgets:{[state.selectedMonth]:state.budgetLimit}}};const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}));const link=document.createElement("a");link.href=url;link.download=`MyMobileApp-${new Date().toISOString().slice(0,10)}.json`;link.click();URL.revokeObjectURL(url);showToast("Sauvegarde exportée");}
-async function importData(file){if(!file)return;try{const payload=JSON.parse(await file.text()),data=payload.data??payload;if(!Array.isArray(data.transactions))throw new Error("Transactions invalides");const expenses=data.transactions.filter(item=>item&&item.type!=="income"&&Number(item.amount)>0&&/^\d{4}-\d{2}-\d{2}$/.test(item.date||""));await replaceTransactions(expenses);if(data.budgets&&typeof data.budgets==="object"){for(const [month,value] of Object.entries(data.budgets)){if(/^\d{4}-\d{2}$/.test(month)&&Number.isFinite(Number(value)))await saveSetting(budgetKey(month),Math.max(0,Number(value)));}}else if(Number.isFinite(Number(data.budgetLimit))){await saveSetting(budgetKey(state.selectedMonth),Math.max(0,Number(data.budgetLimit)));}state.transactions=await getAllTransactions();state.budgetLimit=await loadBudget(state.selectedMonth);render();showToast("Données importées");}catch(error){console.error(error);showToast("Fichier JSON invalide");}}
+async function exportData(){const payload={app:"MyMobileApp",version:7,exportedAt:new Date().toISOString(),data:{transactions:state.transactions,budgets:{[state.selectedMonth]:state.budgetLimit},recurringExpenses:state.recurringExpenses}};const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}));const link=document.createElement("a");link.href=url;link.download=`MyMobileApp-${new Date().toISOString().slice(0,10)}.json`;link.click();URL.revokeObjectURL(url);showToast("Sauvegarde exportée");}
+async function importData(file){if(!file)return;try{const payload=JSON.parse(await file.text()),data=payload.data??payload;if(!Array.isArray(data.transactions))throw new Error("Transactions invalides");const expenses=data.transactions.filter(item=>item&&item.type!=="income"&&Number(item.amount)>0&&/^\d{4}-\d{2}-\d{2}$/.test(item.date||""));await replaceTransactions(expenses);if(data.budgets&&typeof data.budgets==="object"){for(const [month,value] of Object.entries(data.budgets)){if(/^\d{4}-\d{2}$/.test(month)&&Number.isFinite(Number(value)))await saveSetting(budgetKey(month),Math.max(0,Number(value)));}}else if(Number.isFinite(Number(data.budgetLimit))){await saveSetting(budgetKey(state.selectedMonth),Math.max(0,Number(data.budgetLimit)));}if(Array.isArray(data.recurringExpenses)){state.recurringExpenses=data.recurringExpenses.filter(item=>item&&item.id&&item.label&&Number(item.amount)>0);await saveRecurringExpenses();}state.transactions=await getAllTransactions();state.budgetLimit=await loadBudget(state.selectedMonth);render();showToast("Données importées");}catch(error){console.error(error);showToast("Fichier JSON invalide");}}
 
 CATEGORIES.forEach(category=>{elements.category.add(new Option(category,category));elements.categoryFilter.add(new Option(category,category));});
 
-elements.form.addEventListener("submit",async event=>{event.preventDefault();if(state.busy)return;const label=elements.label.value.trim(),amount=Number(elements.amount.value),date=elements.date.value;if(!label||!Number.isFinite(amount)||amount<=0||!/^\d{4}-\d{2}-\d{2}$/.test(date)){showToast("Vérifie les informations saisies");return;}try{state.busy=true;const saved=await addTransaction({id:crypto.randomUUID?.()??`${Date.now()}-${Math.random()}`,type:"expense",label,amount:Math.round(amount*100)/100,category:elements.category.value,date,note:elements.note.value.trim(),createdAt:Date.now()});state.transactions.push(saved);closeExpenseModal();render();showToast("Dépense ajoutée");}catch(error){console.error(error);showToast("Enregistrement impossible");}finally{state.busy=false;}});
+elements.form.addEventListener("submit", async event => {
+  event.preventDefault();
+  if (state.busy) return;
+
+  const label = elements.label.value.trim();
+  const amount = Number(elements.amount.value);
+  const date = elements.date.value;
+  const category = elements.category.value;
+  const note = elements.note.value.trim();
+
+  if (!label || label.length > 60 || !Number.isFinite(amount) || amount <= 0 || amount > 100000000 || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !CATEGORIES.includes(category)) {
+    showToast("Vérifie les informations saisies");
+    return;
+  }
+
+  try {
+    state.busy = true;
+    const roundedAmount = Math.round(amount * 100) / 100;
+    const recurrenceId = elements.recurring.checked ? createId() : null;
+
+    const saved = await addTransaction({
+      id: recurrenceId ? `recurring:${recurrenceId}:${date.slice(0, 7)}` : createId(),
+      type: "expense",
+      label,
+      amount: roundedAmount,
+      category,
+      date,
+      note,
+      recurringId: recurrenceId,
+      isRecurring: Boolean(recurrenceId),
+      createdAt: Date.now()
+    });
+
+    if (recurrenceId) {
+      state.recurringExpenses.push({
+        id: recurrenceId,
+        label,
+        amount: roundedAmount,
+        category,
+        note,
+        day: Number(date.slice(8, 10)),
+        startMonth: date.slice(0, 7),
+        createdAt: Date.now()
+      });
+      await saveRecurringExpenses();
+    }
+
+    state.transactions.push(saved);
+    closeExpenseModal();
+    render();
+    showToast(recurrenceId ? "Dépense mensuelle ajoutée" : "Dépense ajoutée");
+  } catch (error) {
+    console.error(error);
+    showToast("Enregistrement impossible");
+  } finally {
+    state.busy = false;
+  }
+});
 
 $("#prevMonth").onclick=()=>selectMonth(shiftMonth(state.selectedMonth,-1));
 $("#nextMonth").onclick=()=>selectMonth(shiftMonth(state.selectedMonth,1));
@@ -247,7 +384,30 @@ document.querySelector('[data-action="expense"]').onclick=openExpenseModal;
 document.querySelector('[data-action="budget"]').onclick=()=>{closeExpenseModal();openBudgetModal();};
 [elements.search,elements.categoryFilter].forEach(element=>element.addEventListener("input",render));
 
-elements.transactionList.onclick=async event=>{const button=event.target.closest("[data-id]");if(!button||state.busy)return;if(!confirm("Supprimer cette dépense ?"))return;try{state.busy=true;await deleteTransaction(button.dataset.id);state.transactions=state.transactions.filter(item=>item.id!==button.dataset.id);render();showToast("Dépense supprimée");}catch(error){console.error(error);showToast("Suppression impossible");}finally{state.busy=false;}};
+elements.transactionList.onclick = async event => {
+  const button = event.target.closest("[data-id]");
+  if (!button || state.busy) return;
+
+  const recurringId = button.dataset.recurringId;
+  const message = recurringId
+    ? "Supprimer cette dépense et arrêter sa répétition mensuelle ?"
+    : "Supprimer cette dépense ?";
+  if (!confirm(message)) return;
+
+  try {
+    state.busy = true;
+    await deleteTransaction(button.dataset.id);
+    if (recurringId) await removeRecurringExpense(recurringId);
+    state.transactions = state.transactions.filter(item => item.id !== button.dataset.id);
+    render();
+    showToast(recurringId ? "Répétition mensuelle arrêtée" : "Dépense supprimée");
+  } catch (error) {
+    console.error(error);
+    showToast("Suppression impossible");
+  } finally {
+    state.busy = false;
+  }
+};
 
 $("#exportData").onclick=exportData;
 $("#importData").onchange=event=>{importData(event.target.files?.[0]);event.target.value="";};
@@ -267,6 +427,18 @@ window.addEventListener("beforeinstallprompt",event=>{event.preventDefault();sta
 $("#installButton").onclick=async()=>{if(!state.deferredPrompt)return;state.deferredPrompt.prompt();await state.deferredPrompt.userChoice;state.deferredPrompt=null;$("#installButton").hidden=true;};
 if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js").catch(console.error));
 
-async function initialize(){try{await migrateLegacyLocalStorage(LEGACY_STORAGE_KEY);state.transactions=(await getAllTransactions()).filter(item=>item.type!=="income");state.budgetLimit=await loadBudget(state.selectedMonth);render();}catch(error){console.error(error);showToast("Impossible de charger les données locales");render();}}
+async function initialize(){try{await migrateLegacyLocalStorage(LEGACY_STORAGE_KEY);await loadRecurringExpenses();state.transactions=(await getAllTransactions()).filter(item=>item.type!=="income");await materializeRecurringExpenses(state.selectedMonth);state.budgetLimit=await loadBudget(state.selectedMonth);render();}catch(error){console.error(error);showToast("Impossible de charger les données locales");render();}}
+
+// Empêche le zoom par pincement et le double-tap dans la PWA iOS.
+["gesturestart", "gesturechange", "gestureend"].forEach(eventName => {
+  document.addEventListener(eventName, event => event.preventDefault(), { passive: false });
+});
+let lastTouchEnd = 0;
+document.addEventListener("touchend", event => {
+  const now = Date.now();
+  if (now - lastTouchEnd < 300) event.preventDefault();
+  lastTouchEnd = now;
+}, { passive: false });
+
 const savedTheme=localStorage.getItem(THEME_KEY);document.documentElement.dataset.theme=savedTheme||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");
 initialize();
