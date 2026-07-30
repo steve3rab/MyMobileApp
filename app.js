@@ -5,7 +5,8 @@ import {
   getSetting,
   migrateLegacyLocalStorage,
   replaceTransactions,
-  saveSetting
+  saveSetting,
+  purgeDatabase
 } from "./database.js";
 
 const LEGACY_STORAGE_KEY = "myMobileApp.data.v3";
@@ -18,6 +19,9 @@ const $ = selector => document.querySelector(selector);
 const currentMonthKey = () => new Date().toISOString().slice(0, 7);
 const budgetKey = month => `budgetLimit:${month}`;
 const RECURRING_KEY = "recurringExpenses";
+const AGENDA_KEY = "weeklyAgenda";
+const AGENDA_PEOPLE = ["Parent 1", "Parent 2", "Enfant 1"];
+const AGENDA_DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
 
 const state = {
   selectedMonth: currentMonthKey(),
@@ -26,7 +30,8 @@ const state = {
   chartRange: "monthly",
   deferredPrompt: null,
   busy: false,
-  recurringExpenses: []
+  recurringExpenses: [],
+  agenda: {}
 };
 
 const elements = {
@@ -59,7 +64,10 @@ const elements = {
   monthModal: $("#monthModal"),
   monthInput: $("#monthInput"),
   toast: $("#toast"),
-  todayMonth: $("#todayMonth")
+  todayMonth: $("#todayMonth"),
+  agendaGrid: $("#agendaGrid"),
+  saveAgenda: $("#saveAgenda"),
+  purgeDatabaseButton: $("#purgeDatabase")
 };
 
 const currency = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
@@ -309,8 +317,109 @@ function openExpenseModal() {
 function closeExpenseModal(){elements.form.reset();elements.modal.close();}
 function openBudgetModal(){elements.budgetInput.value=String(state.budgetLimit);elements.budgetModal.showModal();setTimeout(()=>elements.budgetInput.focus(),100);}
 
-async function exportData(){const payload={app:"MyMobileApp",version:7,exportedAt:new Date().toISOString(),data:{transactions:state.transactions,budgets:{[state.selectedMonth]:state.budgetLimit},recurringExpenses:state.recurringExpenses}};const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}));const link=document.createElement("a");link.href=url;link.download=`MyMobileApp-${new Date().toISOString().slice(0,10)}.json`;link.click();URL.revokeObjectURL(url);showToast("Sauvegarde exportée");}
-async function importData(file){if(!file)return;try{const payload=JSON.parse(await file.text()),data=payload.data??payload;if(!Array.isArray(data.transactions))throw new Error("Transactions invalides");const expenses=data.transactions.filter(item=>item&&item.type!=="income"&&Number(item.amount)>0&&/^\d{4}-\d{2}-\d{2}$/.test(item.date||""));await replaceTransactions(expenses);if(data.budgets&&typeof data.budgets==="object"){for(const [month,value] of Object.entries(data.budgets)){if(/^\d{4}-\d{2}$/.test(month)&&Number.isFinite(Number(value)))await saveSetting(budgetKey(month),Math.max(0,Number(value)));}}else if(Number.isFinite(Number(data.budgetLimit))){await saveSetting(budgetKey(state.selectedMonth),Math.max(0,Number(data.budgetLimit)));}if(Array.isArray(data.recurringExpenses)){state.recurringExpenses=data.recurringExpenses.filter(item=>item&&item.id&&item.label&&Number(item.amount)>0);await saveRecurringExpenses();}state.transactions=await getAllTransactions();state.budgetLimit=await loadBudget(state.selectedMonth);render();showToast("Données importées");}catch(error){console.error(error);showToast("Fichier JSON invalide");}}
+
+function createEmptyAgenda() {
+  return Object.fromEntries(
+    AGENDA_PEOPLE.map(person => [
+      person,
+      Object.fromEntries(
+        AGENDA_DAYS.map(day => [day, { start: "", end: "" }])
+      )
+    ])
+  );
+}
+
+function normalizeAgenda(value) {
+  const normalized = createEmptyAgenda();
+  if (!value || typeof value !== "object") return normalized;
+
+  for (const person of AGENDA_PEOPLE) {
+    for (const day of AGENDA_DAYS) {
+      const entry = value?.[person]?.[day];
+      if (!entry || typeof entry !== "object") continue;
+      normalized[person][day] = {
+        start: /^([01]\d|2[0-3]):[0-5]\d$/.test(entry.start || "") ? entry.start : "",
+        end: /^([01]\d|2[0-3]):[0-5]\d$/.test(entry.end || "") ? entry.end : ""
+      };
+    }
+  }
+  return normalized;
+}
+
+function renderAgenda() {
+  elements.agendaGrid.innerHTML = AGENDA_PEOPLE.map((person, personIndex) => `
+    <article class="agenda-person">
+      <h3>${escapeHtml(person)}</h3>
+      <div class="agenda-days">
+        ${AGENDA_DAYS.map((day, dayIndex) => {
+          const value = state.agenda[person][day];
+          return `
+            <div class="agenda-day">
+              <strong>${day}</strong>
+              <label class="agenda-time-label">Début
+                <input type="time" data-person="${personIndex}" data-day="${dayIndex}" data-field="start" value="${value.start}">
+              </label>
+              <label class="agenda-time-label">Fin
+                <input type="time" data-person="${personIndex}" data-day="${dayIndex}" data-field="end" value="${value.end}">
+              </label>
+            </div>`;
+        }).join("")}
+      </div>
+    </article>
+  `).join("");
+}
+
+async function saveAgendaFromForm() {
+  const nextAgenda = createEmptyAgenda();
+  elements.agendaGrid.querySelectorAll("input[type=time]").forEach(input => {
+    const person = AGENDA_PEOPLE[Number(input.dataset.person)];
+    const day = AGENDA_DAYS[Number(input.dataset.day)];
+    const field = input.dataset.field;
+    if (person && day && ["start", "end"].includes(field)) {
+      nextAgenda[person][day][field] = input.value;
+    }
+  });
+
+  for (const person of AGENDA_PEOPLE) {
+    for (const day of AGENDA_DAYS) {
+      const { start, end } = nextAgenda[person][day];
+      if (start && end && start >= end) {
+        showToast(`${person} : l’heure de fin doit être après le début (${day})`);
+        return;
+      }
+    }
+  }
+
+  try {
+    await saveSetting(AGENDA_KEY, nextAgenda);
+    state.agenda = nextAgenda;
+    showToast("Agenda enregistré");
+  } catch (error) {
+    console.error(error);
+    showToast("Impossible d’enregistrer l’agenda");
+  }
+}
+
+async function confirmAndPurgeDatabase() {
+  const confirmed = confirm("Supprimer définitivement toutes les dépenses, budgets, récurrences et horaires enregistrés sur ce téléphone ?");
+  if (!confirmed) return;
+
+  const secondConfirmation = confirm("Cette action est irréversible. Continuer ?");
+  if (!secondConfirmation) return;
+
+  try {
+    await purgeDatabase();
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
+    showToast("Base locale purgée");
+    setTimeout(() => location.reload(), 500);
+  } catch (error) {
+    console.error(error);
+    showToast(error?.message || "Purge impossible");
+  }
+}
+
+async function exportData(){const payload={app:"MyMobileApp",version:8,exportedAt:new Date().toISOString(),data:{transactions:state.transactions,budgets:{[state.selectedMonth]:state.budgetLimit},recurringExpenses:state.recurringExpenses,agenda:state.agenda}};const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}));const link=document.createElement("a");link.href=url;link.download=`MyMobileApp-${new Date().toISOString().slice(0,10)}.json`;link.click();URL.revokeObjectURL(url);showToast("Sauvegarde exportée");}
+async function importData(file){if(!file)return;try{const payload=JSON.parse(await file.text()),data=payload.data??payload;if(!Array.isArray(data.transactions))throw new Error("Transactions invalides");const expenses=data.transactions.filter(item=>item&&item.type!=="income"&&Number(item.amount)>0&&/^\d{4}-\d{2}-\d{2}$/.test(item.date||""));await replaceTransactions(expenses);if(data.budgets&&typeof data.budgets==="object"){for(const [month,value] of Object.entries(data.budgets)){if(/^\d{4}-\d{2}$/.test(month)&&Number.isFinite(Number(value)))await saveSetting(budgetKey(month),Math.max(0,Number(value)));}}else if(Number.isFinite(Number(data.budgetLimit))){await saveSetting(budgetKey(state.selectedMonth),Math.max(0,Number(data.budgetLimit)));}if(Array.isArray(data.recurringExpenses)){state.recurringExpenses=data.recurringExpenses.filter(item=>item&&item.id&&item.label&&Number(item.amount)>0);await saveRecurringExpenses();}if(data.agenda){state.agenda=normalizeAgenda(data.agenda);await saveSetting(AGENDA_KEY,state.agenda);renderAgenda();}state.transactions=await getAllTransactions();state.budgetLimit=await loadBudget(state.selectedMonth);render();showToast("Données importées");}catch(error){console.error(error);showToast("Fichier JSON invalide");}}
 
 CATEGORIES.forEach(category=>{elements.category.add(new Option(category,category));elements.categoryFilter.add(new Option(category,category));});
 
@@ -409,6 +518,8 @@ elements.transactionList.onclick = async event => {
   }
 };
 
+elements.saveAgenda.onclick=saveAgendaFromForm;
+elements.purgeDatabaseButton.onclick=confirmAndPurgeDatabase;
 $("#exportData").onclick=exportData;
 $("#importData").onchange=event=>{importData(event.target.files?.[0]);event.target.value="";};
 $("#themeToggle").onclick=()=>{const next=document.documentElement.dataset.theme==="dark"?"light":"dark";document.documentElement.dataset.theme=next;localStorage.setItem(THEME_KEY,next);};
@@ -420,14 +531,14 @@ $("#monthPickerButton").onclick=()=>{elements.monthInput.value=state.selectedMon
 $("#closeMonthModal").onclick=()=>elements.monthModal.close();
 $("#monthForm").onsubmit=async event=>{event.preventDefault();await selectMonth(elements.monthInput.value);elements.monthModal.close();};
 document.querySelectorAll("#chartRange button").forEach(button=>button.onclick=()=>{state.chartRange=button.dataset.range;document.querySelectorAll("#chartRange button").forEach(item=>item.classList.toggle("active",item===button));renderTrendChart();});
-document.querySelectorAll(".nav-item").forEach(button=>button.onclick=()=>{document.querySelectorAll(".nav-item").forEach(item=>item.classList.toggle("active",item===button));const map={dashboard:".month-switcher",history:".search-heading",analytics:".chart-card",settings:".settings-card"};document.querySelector(map[button.dataset.section])?.scrollIntoView({behavior:"smooth",block:"start"});});
+document.querySelectorAll(".nav-item").forEach(button=>button.onclick=()=>{document.querySelectorAll(".nav-item").forEach(item=>item.classList.toggle("active",item===button));const map={dashboard:"#periodSection",analytics:"#statsSection",history:"#historySection",agenda:"#agendaSection",settings:"#settingsSection"};document.querySelector(map[button.dataset.section])?.scrollIntoView({behavior:"smooth",block:"start"});});
 document.querySelector('[data-focus="expense"]').onclick=()=>{document.querySelector(".search-heading")?.scrollIntoView({behavior:"smooth"});};
 
 window.addEventListener("beforeinstallprompt",event=>{event.preventDefault();state.deferredPrompt=event;$("#installButton").hidden=false;});
 $("#installButton").onclick=async()=>{if(!state.deferredPrompt)return;state.deferredPrompt.prompt();await state.deferredPrompt.userChoice;state.deferredPrompt=null;$("#installButton").hidden=true;};
 if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js").catch(console.error));
 
-async function initialize(){try{await migrateLegacyLocalStorage(LEGACY_STORAGE_KEY);await loadRecurringExpenses();state.transactions=(await getAllTransactions()).filter(item=>item.type!=="income");await materializeRecurringExpenses(state.selectedMonth);state.budgetLimit=await loadBudget(state.selectedMonth);render();}catch(error){console.error(error);showToast("Impossible de charger les données locales");render();}}
+async function initialize(){try{await migrateLegacyLocalStorage(LEGACY_STORAGE_KEY);await loadRecurringExpenses();state.agenda=normalizeAgenda(await getSetting(AGENDA_KEY,null));renderAgenda();state.transactions=(await getAllTransactions()).filter(item=>item.type!=="income");await materializeRecurringExpenses(state.selectedMonth);state.budgetLimit=await loadBudget(state.selectedMonth);render();}catch(error){console.error(error);showToast("Impossible de charger les données locales");render();}}
 
 // Empêche le zoom par pincement et le double-tap dans la PWA iOS.
 ["gesturestart", "gesturechange", "gestureend"].forEach(eventName => {

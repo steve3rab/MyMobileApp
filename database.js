@@ -119,3 +119,23 @@ export async function migrateLegacyLocalStorage(storageKey) {
     return false;
   }
 }
+
+
+export async function purgeDatabase() {
+  if (dbPromise) {
+    try {
+      const db = await dbPromise;
+      db.close();
+    } catch (error) {
+      console.warn("Fermeture IndexedDB impossible", error);
+    }
+    dbPromise = undefined;
+  }
+
+  await new Promise((resolve, reject) => {
+    const request = indexedDB.deleteDatabase(DB_NAME);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+    request.onblocked = () => reject(new Error("La base est encore ouverte dans un autre onglet."));
+  });
+}

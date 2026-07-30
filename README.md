@@ -1,9 +1,13 @@
-# MyMobileApp — Stevens v7
+# MyMobileApp — Stevens v8
 
-- Zoom par pincement et double-tap bloqué sur iPhone/PWA.
-- Budget mensuel par défaut : 2 000 €.
-- Dépenses mensuelles récurrentes : cochez « Répéter chaque mois » lors de l’ajout.
-- Une dépense récurrente est créée automatiquement quand le mois est consulté.
-- Supprimer une dépense récurrente arrête également sa répétition future.
-- Catégories enrichies : assurance habitation, réparation voiture, assurance voiture, carburant, Amazon, abonnements, logement, santé et autres.
-- Cache PWA v7.
+## Nouveautés
+- bouton de purge complète de la base IndexedDB dans Réglages ;
+- restauration de « Tableau de bord - Stevens » ;
+- menu Stats placé avant Historique ;
+- filtre Historique sur toute la largeur ;
+- bouton Accueil revenant à la section Période ;
+- module Agenda du lundi au vendredi ;
+- horaires matin/soir pour Parent 1, Parent 2 et Enfant 1 ;
+- agenda sauvegardé dans IndexedDB ;
+- export/import JSON incluant l’agenda ;
+- cache PWA version 8.

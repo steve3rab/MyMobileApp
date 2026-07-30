@@ -17,7 +17,7 @@
     <header class="topbar">
       <div>
         <p class="eyebrow">MyMobileApp</p>
-        <h1 id="pageTitle">Tableau de bord</h1>
+        <h1 id="pageTitle">Tableau de bord <span class="title-owner">- Stevens</span></h1>
       </div>
       <div class="topbar-actions">
         <button id="installButton" class="icon-button install-button" hidden aria-label="Installer l’application">⇩</button>
@@ -26,7 +26,7 @@
     </header>
 
     <main>
-      <section class="month-switcher card reveal">
+      <section id="periodSection" class="month-switcher card reveal">
         <button id="prevMonth" class="icon-button" aria-label="Mois précédent">‹</button>
         <button id="monthPickerButton" class="month-center" aria-label="Choisir un mois">
           <span class="muted">Période</span>
@@ -66,7 +66,7 @@
         </div>
       </section>
 
-      <section class="card chart-card reveal">
+      <section id="statsSection" class="card chart-card reveal">
         <div class="section-heading">
           <div>
             <span class="muted">Analyse</span>
@@ -105,7 +105,7 @@
         </div>
       </section>
 
-      <section class="card reveal">
+      <section id="historySection" class="card reveal">
         <div class="section-heading search-heading">
           <div>
             <span class="muted">Historique</span>
@@ -120,7 +120,7 @@
             <input id="searchInput" type="search" placeholder="Rechercher une opération…" />
           </label>
 
-          <select id="categoryFilter" aria-label="Filtrer par catégorie">
+          <select id="categoryFilter" class="full-width-filter" aria-label="Filtrer par catégorie">
             <option value="all">Toutes catégories</option>
           </select>
         </div>
@@ -133,7 +133,20 @@
         </div>
       </section>
 
-      <section class="card settings-card reveal">
+
+      <section id="agendaSection" class="card agenda-card reveal">
+        <div class="section-heading">
+          <div>
+            <span class="muted">Nouveau module</span>
+            <h2>Agenda de la semaine</h2>
+          </div>
+          <button id="saveAgenda" class="primary-button" type="button">Enregistrer</button>
+        </div>
+        <p class="agenda-help">Renseigne les horaires du lundi au vendredi pour chaque membre de la famille.</p>
+        <div id="agendaGrid" class="agenda-grid" aria-label="Horaires hebdomadaires"></div>
+      </section>
+
+      <section id="settingsSection" class="card settings-card reveal">
         <div class="section-heading">
           <div>
             <span class="muted">Données</span>
@@ -146,6 +159,7 @@
             Importer JSON
             <input id="importData" type="file" accept="application/json" hidden />
           </label>
+          <button id="purgeDatabase" class="danger-button wide-action" type="button">Purger la base locale</button>
         </div>
       </section>
     </main>
@@ -156,11 +170,14 @@
       <button class="nav-item active" data-section="dashboard">
         <span>⌂</span><small>Accueil</small>
       </button>
+      <button class="nav-item" data-section="analytics">
+        <span>◔</span><small>Stats</small>
+      </button>
       <button class="nav-item" data-section="history">
         <span>≡</span><small>Historique</small>
       </button>
-      <button class="nav-item" data-section="analytics">
-        <span>◔</span><small>Stats</small>
+      <button class="nav-item" data-section="agenda">
+        <span>▦</span><small>Agenda</small>
       </button>
       <button class="nav-item" data-section="settings">
         <span>⚙</span><small>Réglages</small>
