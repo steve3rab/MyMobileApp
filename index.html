@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
+  <title>MyMobileApp</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">MyMobileApp</p>
+        <h1>Budget mensuel</h1>
+      </div>
+      <button id="themeToggle" class="icon-button" aria-label="Changer le thème">◐</button>
+    </header>
+
+    <main>
+      <section class="month-switcher card">
+        <button id="prevMonth" class="icon-button" aria-label="Mois précédent">‹</button>
+        <div class="month-center">
+          <span class="muted">Période</span>
+          <strong id="currentMonthLabel"></strong>
+        </div>
+        <button id="nextMonth" class="icon-button" aria-label="Mois suivant">›</button>
+      </section>
+
+      <section class="summary-grid">
+        <article class="summary-card">
+          <span>Revenus</span>
+          <strong id="incomeTotal">0 €</strong>
+        </article>
+        <article class="summary-card">
+          <span>Dépenses</span>
+          <strong id="expenseTotal">0 €</strong>
+        </article>
+        <article class="summary-card balance-card">
+          <span>Reste disponible</span>
+          <strong id="balanceTotal">0 €</strong>
+        </article>
+      </section>
+
+      <section class="card progress-card">
+        <div class="section-heading">
+          <div>
+            <span class="muted">Budget global</span>
+            <h2 id="budgetStatus">0 € sur 0 €</h2>
+          </div>
+          <strong id="budgetPercent">0%</strong>
+        </div>
+        <div class="progress-track">
+          <div id="budgetProgress" class="progress-fill"></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <span class="muted">Opérations</span>
+            <h2>Derniers mouvements</h2>
+          </div>
+          <button id="openTransactionModal" class="primary-button">+ Ajouter</button>
+        </div>
+        <div id="transactionList" class="transaction-list"></div>
+        <div id="emptyState" class="empty-state">
+          <div class="empty-icon">◎</div>
+          <h3>Aucune opération</h3>
+          <p>Ajoute un revenu ou une dépense pour commencer.</p>
+        </div>
+      </section>
+
+      <section class="card settings-card">
+        <div class="section-heading">
+          <div>
+            <span class="muted">Données</span>
+            <h2>Sauvegarde</h2>
+          </div>
+        </div>
+        <div class="action-grid">
+          <button id="exportData" class="secondary-button">Exporter JSON</button>
+          <label class="secondary-button file-label">
+            Importer JSON
+            <input id="importData" type="file" accept="application/json" hidden />
+          </label>
+          <button id="resetData" class="danger-button">Réinitialiser</button>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Navigation principale">
+      <button class="nav-item active" data-page="budget">
+        <span>⌂</span>
+        <small>Budget</small>
+      </button>
+      <button class="nav-item" data-page="stats" disabled>
+        <span>◔</span>
+        <small>Stats</small>
+      </button>
+      <button class="nav-item" data-page="modules" disabled>
+        <span>▦</span>
+        <small>Modules</small>
+      </button>
+      <button class="nav-item" data-page="settings">
+        <span>⚙</span>
+        <small>Réglages</small>
+      </button>
+    </nav>
+  </div>
+
+  <dialog id="transactionModal" class="modal">
+    <form id="transactionForm" method="dialog" class="modal-content">
+      <div class="modal-header">
+        <div>
+          <span class="muted">Nouvelle opération</span>
+          <h2>Ajouter un mouvement</h2>
+        </div>
+        <button type="button" id="closeTransactionModal" class="icon-button">×</button>
+      </div>
+
+      <label>
+        Type
+        <select id="transactionType" required>
+          <option value="expense">Dépense</option>
+          <option value="income">Revenu</option>
+        </select>
+      </label>
+
+      <label>
+        Libellé
+        <input id="transactionLabel" type="text" maxlength="60" placeholder="Ex. Courses" required />
+      </label>
+
+      <label>
+        Montant
+        <input id="transactionAmount" type="number" min="0.01" step="0.01" placeholder="0,00" required />
+      </label>
+
+      <label>
+        Catégorie
+        <select id="transactionCategory" required>
+          <option>Alimentation</option>
+          <option>Logement</option>
+          <option>Transport</option>
+          <option>Factures</option>
+          <option>Santé</option>
+          <option>Loisirs</option>
+          <option>Épargne</option>
+          <option>Revenu</option>
+          <option>Autres</option>
+        </select>
+      </label>
+
+      <label>
+        Date
+        <input id="transactionDate" type="date" required />
+      </label>
+
+      <div class="modal-actions">
+        <button type="button" id="cancelTransaction" class="secondary-button">Annuler</button>
+        <button type="submit" class="primary-button">Enregistrer</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

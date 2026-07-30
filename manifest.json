@@ -1,0 +1,9 @@
+{
+  "name": "MyMobileApp",
+  "short_name": "MyMobileApp",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4f7fb",
+  "theme_color": "#111827",
+  "description": "Application mobile modulaire avec un premier module de suivi du budget mensuel."
+}
