@@ -8,9 +8,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="MyMobileApp" />
   <title>MyMobileApp</title>
-  <link rel="manifest" href="manifest.json?v=17" />
+  <link rel="manifest" href="manifest.json?v=20" />
   <link rel="apple-touch-icon" href="icon-192.svg" />
-  <link rel="stylesheet" href="style.css?v=17" />
+  <link rel="stylesheet" href="style.css?v=20" />
 </head>
 <body>
   <div class="app-shell">
@@ -20,7 +20,11 @@
         <h1 id="pageTitle">Tableau de bord <span class="title-owner">- Stevens</span></h1>
       </div>
       <div class="topbar-actions">
-        <button id="backToPortal" class="icon-button" hidden aria-label="Retour au menu">‹</button>
+        <button id="backToPortal" class="icon-button" hidden aria-label="Retour au menu">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15 18 9 12l6-6" />
+          </svg>
+        </button>
         <button id="installButton" class="icon-button install-button" hidden aria-label="Installer l’application">⇩</button>
         <button id="themeToggle" class="icon-button" aria-label="Changer le thème">◐</button>
       </div>
@@ -181,6 +185,20 @@
         </div>
         <p class="agenda-help">Compare les heures d’entrée et de sortie de chacun, jour par jour. Fais défiler le tableau horizontalement sur un petit écran.</p>
         <div id="agendaGrid" class="agenda-grid" aria-label="Horaires hebdomadaires"></div>
+        <section class="agenda-timeline-section" aria-labelledby="agendaTimelineTitle">
+          <div class="agenda-timeline-heading">
+            <div>
+              <span class="muted">Vue chronologique</span>
+              <h3 id="agendaTimelineTitle">Comparaison des horaires</h3>
+            </div>
+            <div class="agenda-timeline-legend" aria-label="Légende">
+              <span><i class="person-color parent-one"></i>Parent 1</span>
+              <span><i class="person-color parent-two"></i>Parent 2</span>
+              <span><i class="person-color child-one"></i>Enfant 1</span>
+            </div>
+          </div>
+          <div id="agendaTimeline" class="agenda-timeline"></div>
+        </section>
       </section>
       </div>
 
@@ -298,6 +316,6 @@
   </dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
-  <script type="module" src="app.js?v=17"></script>
+  <script type="module" src="app.js?v=20"></script>
 </body>
 </html>

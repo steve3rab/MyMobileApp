@@ -8,7 +8,7 @@ import {
   replaceAppData,
   saveSetting,
   purgeDatabase
-} from "./database.js?v=17";
+} from "./database.js?v=20";
 
 const LEGACY_STORAGE_KEY = "myMobileApp.data.v3";
 const THEME_KEY = "myMobileApp.theme";
@@ -73,6 +73,7 @@ const elements = {
   toast: $("#toast"),
   todayMonth: $("#todayMonth"),
   agendaGrid: $("#agendaGrid"),
+  agendaTimeline: $("#agendaTimeline"),
   saveAgenda: $("#saveAgenda"),
   purgeDatabaseButton: $("#purgeDatabase"),
   lastExportInfo: $("#lastExportInfo")
@@ -438,9 +439,10 @@ function renderAgenda() {
         </div>
       `).join("")}
     </div>`;
+  renderAgendaTimeline(state.agenda);
 }
 
-async function saveAgendaFromForm() {
+function agendaFromForm() {
   const nextAgenda = createEmptyAgenda();
   elements.agendaGrid.querySelectorAll("input[type=time]").forEach(input => {
     const person = AGENDA_PEOPLE[Number(input.dataset.person)];
@@ -450,6 +452,67 @@ async function saveAgendaFromForm() {
       nextAgenda[person][day][field] = input.value;
     }
   });
+  return nextAgenda;
+}
+
+function timeToMinutes(value) {
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(value || "")) return null;
+  const [hours, minutes] = value.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+function renderAgendaTimeline(agenda) {
+  const entries = [];
+  for (const person of AGENDA_PEOPLE) {
+    for (const day of AGENDA_DAYS) {
+      const start = timeToMinutes(agenda?.[person]?.[day]?.start);
+      const end = timeToMinutes(agenda?.[person]?.[day]?.end);
+      if (start !== null && end !== null && end > start) entries.push({ start, end });
+    }
+  }
+
+  if (!entries.length) {
+    elements.agendaTimeline.innerHTML = '<p class="agenda-timeline-empty">Renseigne une heure d’entrée et de sortie pour afficher la comparaison.</p>';
+    return;
+  }
+
+  const firstHour = Math.max(0, Math.floor(Math.min(...entries.map(item => item.start)) / 60) - 1);
+  const lastHour = Math.min(24, Math.ceil(Math.max(...entries.map(item => item.end)) / 60) + 1);
+  const range = Math.max(1, (lastHour - firstHour) * 60);
+  const ticks = Array.from({ length: lastHour - firstHour + 1 }, (_, index) => firstHour + index);
+
+  elements.agendaTimeline.innerHTML = `
+    <div class="timeline-scale" style="--tick-count:${ticks.length - 1}">
+      <div></div>
+      <div class="timeline-ticks">
+        ${ticks.map(hour => `<span style="left:${((hour - firstHour) / (lastHour - firstHour)) * 100}%">${String(hour).padStart(2, "0")}h</span>`).join("")}
+      </div>
+    </div>
+    ${AGENDA_DAYS.map(day => `
+      <article class="timeline-day">
+        <strong>${day}</strong>
+        <div class="timeline-day-tracks" style="--tick-count:${ticks.length - 1}">
+          ${AGENDA_PEOPLE.map((person, personIndex) => {
+            const startValue = agenda?.[person]?.[day]?.start || "";
+            const endValue = agenda?.[person]?.[day]?.end || "";
+            const start = timeToMinutes(startValue);
+            const end = timeToMinutes(endValue);
+            const valid = start !== null && end !== null && end > start;
+            const left = valid ? ((start - firstHour * 60) / range) * 100 : 0;
+            const width = valid ? ((end - start) / range) * 100 : 0;
+            return `
+              <div class="timeline-track">
+                <span class="timeline-person-label">${escapeHtml(person)}</span>
+                ${valid ? `<div class="timeline-bar person-${personIndex + 1}" style="left:${left}%;width:${width}%" title="${escapeHtml(person)} : ${startValue}–${endValue}"><span>${startValue}–${endValue}</span></div>` : '<span class="timeline-missing">—</span>'}
+              </div>`;
+          }).join("")}
+        </div>
+      </article>
+    `).join("")}`;
+}
+
+async function saveAgendaFromForm() {
+  const nextAgenda = agendaFromForm();
 
   for (const person of AGENDA_PEOPLE) {
     for (const day of AGENDA_DAYS) {
@@ -556,7 +619,7 @@ async function exportData() {
     );
     const payload = {
       app: "MyMobileApp",
-      version: 17,
+      version: 20,
       exportedAt: new Date().toISOString(),
       data: { transactions: state.transactions, budgets, recurringExpenses: state.recurringExpenses, agenda: state.agenda }
     };
@@ -721,6 +784,7 @@ elements.transactionList.onclick = async event => {
 };
 
 elements.saveAgenda.onclick=saveAgendaFromForm;
+elements.agendaGrid.addEventListener("input", () => renderAgendaTimeline(agendaFromForm()));
 elements.purgeDatabaseButton.onclick=confirmAndPurgeDatabase;
 $("#exportData").onclick=exportData;
 $("#importData").onchange=event=>{importData(event.target.files?.[0]);event.target.value="";};
@@ -762,7 +826,7 @@ document.querySelector('[data-focus="expense"]').onclick=()=>{document.querySele
 
 window.addEventListener("beforeinstallprompt",event=>{event.preventDefault();state.deferredPrompt=event;$("#installButton").hidden=false;});
 $("#installButton").onclick=async()=>{if(!state.deferredPrompt)return;state.deferredPrompt.prompt();await state.deferredPrompt.userChoice;state.deferredPrompt=null;$("#installButton").hidden=true;};
-if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js?v=17").catch(console.error));
+if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js?v=20").catch(console.error));
 
 
 function showPortal(){

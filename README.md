@@ -1,4 +1,4 @@
-# MyMobileApp — version 17
+# MyMobileApp — version 20
 
 ## Nouveau portail
 - écran d’accueil avec deux modules distincts ;
@@ -22,4 +22,7 @@
 - flèche de retour centrée géométriquement et optiquement ;
 - navigation Budget rendue déterministe sans conflit avec le défilement ;
 - agenda transformé en matrice comparative jours × personnes ;
-- cache PWA mis à jour en v17.
+- champs date, mois et heure contraints à la largeur mobile disponible ;
+- caractère de retour remplacé par un chevron SVG géométriquement centré ;
+- vue chronologique comparative des horaires, actualisée pendant la saisie ;
+- cache PWA mis à jour en v20.
