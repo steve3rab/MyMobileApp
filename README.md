@@ -1,4 +1,4 @@
-# MyMobileApp — version 14
+# MyMobileApp — version 17
 
 ## Nouveau portail
 - écran d’accueil avec deux modules distincts ;
@@ -19,4 +19,7 @@
 - navigation Réglages stabilisée pendant le défilement en mode PWA ;
 - gouttières et espacements uniformisés sur mobile ;
 - ressources CSS et JavaScript versionnées pour éviter les mélanges de cache ;
-- cache PWA mis à jour en v14.
+- flèche de retour centrée géométriquement et optiquement ;
+- navigation Budget rendue déterministe sans conflit avec le défilement ;
+- agenda transformé en matrice comparative jours × personnes ;
+- cache PWA mis à jour en v17.

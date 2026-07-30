@@ -8,7 +8,7 @@ import {
   replaceAppData,
   saveSetting,
   purgeDatabase
-} from "./database.js?v=14";
+} from "./database.js?v=17";
 
 const LEGACY_STORAGE_KEY = "myMobileApp.data.v3";
 const THEME_KEY = "myMobileApp.theme";
@@ -411,26 +411,33 @@ function normalizeAgenda(value) {
 }
 
 function renderAgenda() {
-  elements.agendaGrid.innerHTML = AGENDA_PEOPLE.map((person, personIndex) => `
-    <article class="agenda-person">
-      <h3>${escapeHtml(person)}</h3>
-      <div class="agenda-days">
-        ${AGENDA_DAYS.map((day, dayIndex) => {
-          const value = state.agenda[person][day];
-          return `
-            <div class="agenda-day">
-              <strong>${day}</strong>
-              <label class="agenda-time-label">Début
-                <input type="time" data-person="${personIndex}" data-day="${dayIndex}" data-field="start" value="${value.start}">
-              </label>
-              <label class="agenda-time-label">Fin
-                <input type="time" data-person="${personIndex}" data-day="${dayIndex}" data-field="end" value="${value.end}">
-              </label>
-            </div>`;
-        }).join("")}
+  elements.agendaGrid.innerHTML = `
+    <div class="agenda-table" role="table" aria-label="Comparaison des horaires de la semaine">
+      <div class="agenda-table-row agenda-table-header" role="row">
+        <div class="agenda-day-heading" role="columnheader">Jour</div>
+        ${AGENDA_PEOPLE.map(person => `<div role="columnheader">${escapeHtml(person)}</div>`).join("")}
       </div>
-    </article>
-  `).join("");
+      ${AGENDA_DAYS.map((day, dayIndex) => `
+        <div class="agenda-table-row" role="row">
+          <div class="agenda-day-heading" role="rowheader">${day}</div>
+          ${AGENDA_PEOPLE.map((person, personIndex) => {
+            const value = state.agenda[person][day];
+            return `
+              <div class="agenda-time-cell" role="cell">
+                <label>
+                  <span>Entrée</span>
+                  <input type="time" aria-label="${escapeHtml(person)}, ${day}, heure d’entrée" data-person="${personIndex}" data-day="${dayIndex}" data-field="start" value="${value.start}">
+                </label>
+                <span class="agenda-time-arrow" aria-hidden="true">→</span>
+                <label>
+                  <span>Sortie</span>
+                  <input type="time" aria-label="${escapeHtml(person)}, ${day}, heure de sortie" data-person="${personIndex}" data-day="${dayIndex}" data-field="end" value="${value.end}">
+                </label>
+              </div>`;
+          }).join("")}
+        </div>
+      `).join("")}
+    </div>`;
 }
 
 async function saveAgendaFromForm() {
@@ -549,7 +556,7 @@ async function exportData() {
     );
     const payload = {
       app: "MyMobileApp",
-      version: 14,
+      version: 17,
       exportedAt: new Date().toISOString(),
       data: { transactions: state.transactions, budgets, recurringExpenses: state.recurringExpenses, agenda: state.agenda }
     };
@@ -742,55 +749,20 @@ function setActiveNavigation(section) {
   });
 }
 
-function updateActiveNavigation() {
-  if ($("#budgetNav").hidden) return;
-  if (pendingNavigationSection) {
-    setActiveNavigation(pendingNavigationSection);
-    return;
-  }
-  const documentHeight = document.documentElement.scrollHeight;
-  const settingsVisible = budgetSections.settings.getBoundingClientRect().top < window.innerHeight - 96;
-  const reachedPageEnd = window.scrollY > 20 && settingsVisible && window.scrollY + window.innerHeight >= documentHeight - 48;
-  if (reachedPageEnd) {
-    setActiveNavigation("settings");
-    return;
-  }
-  const threshold = 150;
-  let activeSection = "dashboard";
-  for (const [section, element] of Object.entries(budgetSections)) {
-    if (!element.hidden && element.getBoundingClientRect().top <= threshold) activeSection = section;
-  }
-  setActiveNavigation(activeSection);
-}
-
-let navigationFrame;
-let pendingNavigationSection = null;
-let navigationUnlockTimer;
-window.addEventListener("scroll", () => {
-  cancelAnimationFrame(navigationFrame);
-  navigationFrame = requestAnimationFrame(updateActiveNavigation);
-}, { passive: true });
-
 document.querySelectorAll(".nav-item").forEach(button=>button.onclick=()=>{
   const section = button.dataset.section;
   const target = budgetSections[section];
   if (!target) return;
-  pendingNavigationSection = section;
   setActiveNavigation(section);
   const desiredTop = window.scrollY + target.getBoundingClientRect().top - 112;
   const maximumTop = document.documentElement.scrollHeight - window.innerHeight;
-  window.scrollTo({ top: Math.max(0, Math.min(desiredTop, maximumTop)), behavior: "smooth" });
-  clearTimeout(navigationUnlockTimer);
-  navigationUnlockTimer = setTimeout(() => {
-    pendingNavigationSection = null;
-    updateActiveNavigation();
-  }, 1200);
+  window.scrollTo({ top: Math.max(0, Math.min(desiredTop, maximumTop)), behavior: "auto" });
 });
 document.querySelector('[data-focus="expense"]').onclick=()=>{document.querySelector(".search-heading")?.scrollIntoView({behavior:"smooth"});};
 
 window.addEventListener("beforeinstallprompt",event=>{event.preventDefault();state.deferredPrompt=event;$("#installButton").hidden=false;});
 $("#installButton").onclick=async()=>{if(!state.deferredPrompt)return;state.deferredPrompt.prompt();await state.deferredPrompt.userChoice;state.deferredPrompt=null;$("#installButton").hidden=true;};
-if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js?v=14").catch(console.error));
+if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js?v=17").catch(console.error));
 
 
 function showPortal(){
