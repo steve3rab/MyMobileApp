@@ -1,4 +1,4 @@
-# MyMobileApp — version 23
+# MyMobileApp — version 24
 
 ## Nouveau portail
 - écran d’accueil avec deux modules distincts ;
@@ -27,5 +27,6 @@
 - vue chronologique comparative des horaires, actualisée pendant la saisie ;
 - filtre de catégories aligné sur la largeur de la recherche ;
 - cellules horaires empilées sur les colonnes étroites, sans chevauchement ;
-- gouttière ajoutée entre les champs horaires et les séparateurs ;
-- cache PWA mis à jour en v23.
+- largeur intrinsèque des champs horaires neutralisée dans la matrice ;
+- gouttière interne et découpage strict avant les séparateurs ;
+- cache PWA mis à jour en v24.

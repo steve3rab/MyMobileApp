@@ -8,7 +8,7 @@ import {
   replaceAppData,
   saveSetting,
   purgeDatabase
-} from "./database.js?v=23";
+} from "./database.js?v=24";
 
 const LEGACY_STORAGE_KEY = "myMobileApp.data.v3";
 const THEME_KEY = "myMobileApp.theme";
@@ -619,7 +619,7 @@ async function exportData() {
     );
     const payload = {
       app: "MyMobileApp",
-      version: 23,
+      version: 24,
       exportedAt: new Date().toISOString(),
       data: { transactions: state.transactions, budgets, recurringExpenses: state.recurringExpenses, agenda: state.agenda }
     };
@@ -826,7 +826,7 @@ document.querySelector('[data-focus="expense"]').onclick=()=>{document.querySele
 
 window.addEventListener("beforeinstallprompt",event=>{event.preventDefault();state.deferredPrompt=event;$("#installButton").hidden=false;});
 $("#installButton").onclick=async()=>{if(!state.deferredPrompt)return;state.deferredPrompt.prompt();await state.deferredPrompt.userChoice;state.deferredPrompt=null;$("#installButton").hidden=true;};
-if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js?v=23").catch(console.error));
+if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js?v=24").catch(console.error));
 
 
 function showPortal(){
