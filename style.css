@@ -1096,10 +1096,11 @@ main,
 
 .agenda-time-cell input {
   display: block;
-  width: 100%;
+  width: calc(100% - 6px);
   min-width: 0;
   min-height: 48px;
-  max-width: 100%;
+  max-width: calc(100% - 6px);
+  margin-right: 6px;
   padding: 10px 8px;
   box-sizing: border-box;
   border: 1px solid var(--border);
