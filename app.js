@@ -8,7 +8,7 @@ import {
   replaceAppData,
   saveSetting,
   purgeDatabase
-} from "./database.js";
+} from "./database.js?v=14";
 
 const LEGACY_STORAGE_KEY = "myMobileApp.data.v3";
 const THEME_KEY = "myMobileApp.theme";
@@ -549,7 +549,7 @@ async function exportData() {
     );
     const payload = {
       app: "MyMobileApp",
-      version: 13,
+      version: 14,
       exportedAt: new Date().toISOString(),
       data: { transactions: state.transactions, budgets, recurringExpenses: state.recurringExpenses, agenda: state.agenda }
     };
@@ -773,9 +773,13 @@ window.addEventListener("scroll", () => {
 
 document.querySelectorAll(".nav-item").forEach(button=>button.onclick=()=>{
   const section = button.dataset.section;
+  const target = budgetSections[section];
+  if (!target) return;
   pendingNavigationSection = section;
   setActiveNavigation(section);
-  budgetSections[section]?.scrollIntoView({behavior:"smooth",block:"start"});
+  const desiredTop = window.scrollY + target.getBoundingClientRect().top - 112;
+  const maximumTop = document.documentElement.scrollHeight - window.innerHeight;
+  window.scrollTo({ top: Math.max(0, Math.min(desiredTop, maximumTop)), behavior: "smooth" });
   clearTimeout(navigationUnlockTimer);
   navigationUnlockTimer = setTimeout(() => {
     pendingNavigationSection = null;
@@ -786,7 +790,7 @@ document.querySelector('[data-focus="expense"]').onclick=()=>{document.querySele
 
 window.addEventListener("beforeinstallprompt",event=>{event.preventDefault();state.deferredPrompt=event;$("#installButton").hidden=false;});
 $("#installButton").onclick=async()=>{if(!state.deferredPrompt)return;state.deferredPrompt.prompt();await state.deferredPrompt.userChoice;state.deferredPrompt=null;$("#installButton").hidden=true;};
-if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js").catch(console.error));
+if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js?v=14").catch(console.error));
 
 
 function showPortal(){

@@ -696,3 +696,60 @@ main,
     max-height: calc(100dvh - 12px);
   }
 }
+
+
+/* Grille mobile uniforme : mêmes gouttières entre toutes les cartes */
+@media (max-width: 599px) {
+  :root {
+    --mobile-gutter: 16px;
+    --mobile-card-gap: 20px;
+  }
+
+  .app-shell {
+    padding-left: var(--mobile-gutter) !important;
+    padding-right: var(--mobile-gutter) !important;
+  }
+
+  main,
+  .module-view:not([hidden]),
+  .summary-grid {
+    gap: var(--mobile-card-gap) !important;
+  }
+
+  .card,
+  .summary-card {
+    width: 100%;
+    margin: 0 !important;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .summary-card {
+    min-height: 132px;
+  }
+
+  .balance-card {
+    grid-column: 1 !important;
+  }
+
+  #agendaModule .agenda-card {
+    margin-top: 0;
+  }
+
+  .portal-view {
+    padding-inline: 0;
+  }
+}
+
+@media (min-width: 600px) {
+  main,
+  .module-view:not([hidden]) {
+    gap: 28px;
+  }
+
+  .summary-grid {
+    gap: 24px;
+  }
+}

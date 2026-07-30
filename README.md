@@ -1,4 +1,4 @@
-# MyMobileApp — version 13
+# MyMobileApp — version 14
 
 ## Nouveau portail
 - écran d’accueil avec deux modules distincts ;
@@ -17,4 +17,6 @@
 - mise en page plus aérée, modales adaptatives et paliers responsive ;
 - zoom désactivé pour un comportement stable en mode application ;
 - navigation Réglages stabilisée pendant le défilement en mode PWA ;
-- cache PWA mis à jour en v13.
+- gouttières et espacements uniformisés sur mobile ;
+- ressources CSS et JavaScript versionnées pour éviter les mélanges de cache ;
+- cache PWA mis à jour en v14.
