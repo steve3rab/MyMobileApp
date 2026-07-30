@@ -315,6 +315,12 @@ html,body{touch-action:auto}
 
 .title-owner { font-weight: 700; color: var(--primary); white-space: nowrap; }
 .full-width-filter { width: 100%; min-height: 48px; }
+.search-panel .full-width-filter {
+  width: 100%;
+  max-width: none;
+  min-height: 52px;
+  padding-inline: 14px;
+}
 .search-panel { grid-template-columns: 1fr !important; }
 .wide-action { grid-column: 1 / -1; min-height: 48px; }
 .agenda-card { scroll-margin-top: 110px; }
@@ -1073,9 +1079,10 @@ main,
 
 .agenda-time-cell {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: end;
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: 8px;
+  overflow: hidden;
 }
 
 .agenda-time-cell label {
@@ -1088,10 +1095,13 @@ main,
 }
 
 .agenda-time-cell input {
+  display: block;
   width: 100%;
   min-width: 0;
   min-height: 48px;
+  max-width: 100%;
   padding: 10px 8px;
+  box-sizing: border-box;
   border: 1px solid var(--border);
   border-radius: 12px;
   color: var(--text);
@@ -1105,12 +1115,30 @@ main,
 }
 
 .agenda-time-arrow {
-  align-self: end;
+  align-self: center;
+  justify-self: center;
   display: grid;
   place-items: center;
-  min-height: 48px;
+  width: 22px;
+  min-height: 16px;
   color: var(--muted);
   font-weight: 900;
+  line-height: 1;
+  transform: rotate(90deg);
+}
+
+@media (min-width: 900px) {
+  .agenda-time-cell {
+    grid-template-columns: minmax(0, 1fr) 22px minmax(0, 1fr);
+    align-items: end;
+    gap: 10px;
+  }
+
+  .agenda-time-arrow {
+    align-self: end;
+    min-height: 48px;
+    transform: none;
+  }
 }
 
 @media (max-width: 599px) {

@@ -1,4 +1,4 @@
-# MyMobileApp — version 20
+# MyMobileApp — version 22
 
 ## Nouveau portail
 - écran d’accueil avec deux modules distincts ;
@@ -25,4 +25,6 @@
 - champs date, mois et heure contraints à la largeur mobile disponible ;
 - caractère de retour remplacé par un chevron SVG géométriquement centré ;
 - vue chronologique comparative des horaires, actualisée pendant la saisie ;
-- cache PWA mis à jour en v20.
+- filtre de catégories aligné sur la largeur de la recherche ;
+- cellules horaires empilées sur les colonnes étroites, sans chevauchement ;
+- cache PWA mis à jour en v22.
