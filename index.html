@@ -17,7 +17,7 @@
     <header class="topbar">
       <div>
         <p class="eyebrow">MyMobileApp</p>
-        <h1 id="pageTitle">Tableau de bord</h1>
+        <h1 id="pageTitle">Tableau de bord <span class="dashboard-owner">- Stevens</span></h1>
       </div>
       <div class="topbar-actions">
         <button id="installButton" class="icon-button install-button" hidden aria-label="Installer l’application">⇩</button>
@@ -32,7 +32,7 @@
           <span class="muted">Période</span>
           <strong id="currentMonthLabel"></strong>
         </button>
-        <button id="nextMonth" class="icon-button" aria-label="Mois suivant">›</button>
+        <div class="month-actions"><button id="todayMonth" class="today-button" type="button">Aujourd’hui</button><button id="nextMonth" class="icon-button" aria-label="Mois suivant">›</button></div>
       </section>
 
       <section class="summary-grid reveal">
@@ -150,8 +150,6 @@
             Importer JSON
             <input id="importData" type="file" accept="application/json" hidden />
           </label>
-          <button id="seedDemo" class="secondary-button">Ajouter des données démo</button>
-          <button id="resetData" class="danger-button">Réinitialiser</button>
         </div>
       </section>
     </main>
@@ -244,6 +242,6 @@
   </dialog>
 
   <div id="toast" class="toast" hidden></div>
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>

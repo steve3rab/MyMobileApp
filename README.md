@@ -1,24 +1,14 @@
-# MyMobileApp — version enrichie
+# MyMobileApp — IndexedDB
 
-Tous les fichiers sont placés à la racine pour faciliter la publication sur GitHub Pages.
+Cette version stocke les opérations dans IndexedDB et migre automatiquement les anciennes données localStorage.
 
-## Fonctionnalités
-- animations fluides inspirées d’iOS ;
-- graphiques interactifs mensuels et annuels ;
-- historique, recherche et filtres ;
-- mode clair et sombre ;
-- export/import JSON ;
-- fonctionnement hors ligne ;
-- PWA installable sur iPhone ;
-- stockage local dans le navigateur.
+Corrections : bouton Aujourd’hui, blocage des mois futurs, suppression des démos/seeds et du bouton de réinitialisation, bouton + placé au-dessus de la barre de navigation.
 
-## Publication GitHub Pages
-Envoyer tous les fichiers à la racine du dépôt, puis activer **Settings → Pages → Deploy from a branch → main → /(root)**.
 
-## Installation sur iPhone
-Après publication en HTTPS :
-1. ouvrir l’adresse dans Safari ;
-2. toucher Partager ;
-3. choisir Ajouter à l’écran d’accueil.
-
-Le service worker permet ensuite l’ouverture hors ligne.
+## Version UI v5
+- composants et espacements harmonisés ;
+- espace renforcé entre l’en-tête et la période ;
+- ajout de « - Stevens » dans le titre ;
+- formulaire mobile corrigé, notamment le champ date ;
+- boutons Dépense/Revenu en pleine largeur ;
+- catégories familiales ajoutées.
