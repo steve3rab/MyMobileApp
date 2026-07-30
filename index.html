@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0f172a" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -45,6 +45,19 @@
             <b>›</b>
           </button>
         </div>
+        <details class="portal-tools">
+          <summary>
+            <span>
+              <span class="muted">Options avancées</span>
+              <strong>Gestion des données</strong>
+            </span>
+            <span class="details-chevron" aria-hidden="true">›</span>
+          </summary>
+          <div class="portal-tools-content">
+            <p>La purge efface toutes les dépenses, les budgets, les récurrences et les horaires enregistrés sur cet appareil.</p>
+            <button id="purgeDatabase" class="danger-button" type="button">Purger la base locale</button>
+          </div>
+        </details>
       </section>
 
       <div id="budgetModule" class="module-view" hidden>
@@ -185,8 +198,8 @@
             Importer JSON
             <input id="importData" type="file" accept="application/json" hidden />
           </label>
-          <button id="purgeDatabase" class="danger-button wide-action" type="button">Purger la base locale</button>
         </div>
+        <p id="lastExportInfo" class="last-export-info">Aucun export effectué sur cet appareil.</p>
       </section>
       </div>
     </main>
@@ -194,7 +207,7 @@
     <button id="floatingAdd" hidden class="floating-add" aria-label="Ajouter une opération">+</button>
 
     <nav id="budgetNav" class="bottom-nav" aria-label="Navigation MyBudget" hidden>
-      <button class="nav-item active" data-section="dashboard">
+      <button class="nav-item active" data-section="dashboard" aria-current="page">
         <span>⌂</span><small>Accueil</small>
       </button>
       <button class="nav-item" data-section="analytics">
@@ -284,7 +297,7 @@
     </form>
   </dialog>
 
-  <div id="toast" class="toast" hidden></div>
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
   <script type="module" src="app.js"></script>
 </body>
 </html>

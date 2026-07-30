@@ -1,22 +1,28 @@
 import {
   addTransaction,
   deleteTransaction,
+  getAllSettings,
   getAllTransactions,
   getSetting,
   migrateLegacyLocalStorage,
-  replaceTransactions,
+  replaceAppData,
   saveSetting,
   purgeDatabase
 } from "./database.js";
 
 const LEGACY_STORAGE_KEY = "myMobileApp.data.v3";
 const THEME_KEY = "myMobileApp.theme";
+const EXPENSE_DRAFT_KEY = "myMobileApp.expenseDraft";
+const LAST_EXPORT_KEY = "myMobileApp.lastExport";
 const DEFAULT_BUDGET = 2000;
 const CATEGORIES = ["Alimentation", "Loyer", "Crédit immobilier", "Électricité", "Eau", "Gaz", "Internet", "Téléphone", "Assurance habitation", "Réparation maison", "Transport", "Carburant", "Péage", "Parking", "Entretien voiture", "Réparation voiture", "Assurance voiture", "Contrôle technique", "Factures", "Santé", "Pharmacie", "Mutuelle", "École", "Crèche", "Vêtements", "Courses", "Restaurant", "Loisirs", "Abonnements", "Amazon", "Netflix", "Épargne", "Impôts", "Frais bancaires", "Cadeaux", "Voyage", "Maman", "Papa", "Fils", "Femme", "Fille", "Frère", "Sœur", "Autres"];
 const CATEGORY_COLORS = ["#4f46e5", "#ef4444", "#f97316", "#f59e0b", "#22c55e", "#06b6d4", "#8b5cf6", "#ec4899", "#3b82f6", "#14b8a6", "#d946ef", "#f43f5e", "#0ea5e9", "#a855f7", "#64748b"];
 
 const $ = selector => document.querySelector(selector);
-const currentMonthKey = () => new Date().toISOString().slice(0, 7);
+function localDateKey(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+const currentMonthKey = () => localDateKey().slice(0, 7);
 const budgetKey = month => `budgetLimit:${month}`;
 const RECURRING_KEY = "recurringExpenses";
 const AGENDA_KEY = "weeklyAgenda";
@@ -31,7 +37,8 @@ const state = {
   deferredPrompt: null,
   busy: false,
   recurringExpenses: [],
-  agenda: {}
+  agenda: {},
+  chartRenderId: 0
 };
 
 const elements = {
@@ -67,7 +74,8 @@ const elements = {
   todayMonth: $("#todayMonth"),
   agendaGrid: $("#agendaGrid"),
   saveAgenda: $("#saveAgenda"),
-  purgeDatabaseButton: $("#purgeDatabase")
+  purgeDatabaseButton: $("#purgeDatabase"),
+  lastExportInfo: $("#lastExportInfo")
 };
 
 const currency = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
@@ -94,6 +102,13 @@ function formatDate(value) {
   return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(`${value}T12:00:00`));
 }
 
+function isValidDateKey(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+}
+
 function shiftMonth(key, offset) {
   const [year, month] = key.split("-").map(Number);
   const date = new Date(year, month - 1 + offset, 1);
@@ -105,6 +120,18 @@ function showToast(message) {
   elements.toast.hidden = false;
   clearTimeout(showToast.timer);
   showToast.timer = setTimeout(() => { elements.toast.hidden = true; }, 2200);
+}
+
+function updateLastExportInfo() {
+  const savedAt = localStorage.getItem(LAST_EXPORT_KEY);
+  if (!savedAt) {
+    elements.lastExportInfo.textContent = "Aucun export effectué sur cet appareil.";
+    return;
+  }
+  const date = new Date(savedAt);
+  elements.lastExportInfo.textContent = Number.isNaN(date.getTime())
+    ? "Dernier export : date inconnue."
+    : `Dernier export : ${new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" }).format(date)}`;
 }
 
 function selectedExpenses(month = state.selectedMonth) {
@@ -199,6 +226,8 @@ async function selectMonth(month) {
 
 function render() {
   const spent = expenseTotal();
+  const previousSpent = expenseTotal(shiftMonth(state.selectedMonth, -1));
+  const monthlyDifference = spent - previousSpent;
   const remaining = state.budgetLimit - spent;
   const usedPercent = state.budgetLimit > 0 ? Math.min(100, (spent / state.budgetLimit) * 100) : 0;
   const availablePercent = state.budgetLimit > 0 ? Math.max(0, (remaining / state.budgetLimit) * 100) : 0;
@@ -207,7 +236,11 @@ function render() {
   elements.budgetMonthTotal.textContent = currency.format(state.budgetLimit);
   elements.expenseTotal.textContent = currency.format(spent);
   elements.balanceTotal.textContent = currency.format(remaining);
-  $("#expenseDelta").textContent = `${Math.round(usedPercent)}% du budget utilisé`;
+  $("#expenseDelta").textContent = monthlyDifference === 0
+    ? "Identique au mois précédent"
+    : `${currency.format(Math.abs(monthlyDifference))} ${monthlyDifference > 0 ? "de plus" : "de moins"} que le mois précédent`;
+  $("#expenseDelta").classList.toggle("delta-up", monthlyDifference > 0);
+  $("#expenseDelta").classList.toggle("delta-down", monthlyDifference < 0);
   $("#remainingRate").textContent = `Disponible ${Math.round(availablePercent)}%`;
   elements.budgetStatus.textContent = `${currency.format(spent)} sur ${currency.format(state.budgetLimit)}`;
   elements.budgetPercent.textContent = `${Math.round(usedPercent)}%`;
@@ -218,7 +251,7 @@ function render() {
   $("#nextMonth").disabled = state.selectedMonth >= currentMonthKey();
 
   renderTransactions();
-  renderTrendChart();
+  void renderTrendChart();
   renderDonut();
 }
 
@@ -265,10 +298,13 @@ async function budgetForChart(month) {
 }
 
 async function renderTrendChart() {
+  const renderId = ++state.chartRenderId;
+  const selectedMonth = state.selectedMonth;
+  const selectedRange = state.chartRange;
   const annual = state.chartRange === "annual";
   const data = [];
   if (annual) {
-    const currentYear = Number(state.selectedMonth.slice(0, 4));
+    const currentYear = Number(selectedMonth.slice(0, 4));
     for (let offset = 5; offset >= 0; offset--) {
       const year = currentYear - offset;
       const months = Array.from({ length: 12 }, (_, i) => `${year}-${String(i + 1).padStart(2, "0")}`);
@@ -277,10 +313,11 @@ async function renderTrendChart() {
     }
   } else {
     for (let offset = 5; offset >= 0; offset--) {
-      const month = shiftMonth(state.selectedMonth, -offset);
+      const month = shiftMonth(selectedMonth, -offset);
       data.push({ label: new Intl.DateTimeFormat("fr-FR", { month: "short" }).format(new Date(`${month}-01T12:00:00`)), budget: await budgetForChart(month), expense: expenseTotal(month) });
     }
   }
+  if (renderId !== state.chartRenderId || selectedMonth !== state.selectedMonth || selectedRange !== state.chartRange) return;
   const svg = elements.trendChart, width=640, height=260, pad={l:42,r:16,t:20,b:34};
   const max = Math.max(100, ...data.flatMap(item => [item.budget, item.expense])) * 1.12;
   const x = i => pad.l + i * ((width-pad.l-pad.r)/(data.length-1||1));
@@ -310,11 +347,38 @@ function renderDonut() {
 function openExpenseModal() {
   elements.form.reset();
   elements.category.value="Alimentation";
-  elements.date.value=state.selectedMonth===currentMonthKey()?new Date().toISOString().slice(0,10):`${state.selectedMonth}-01`;
+  elements.date.value=state.selectedMonth===currentMonthKey()?localDateKey():`${state.selectedMonth}-01`;
+  try {
+    const draft = JSON.parse(sessionStorage.getItem(EXPENSE_DRAFT_KEY) || "null");
+    if (draft && typeof draft === "object") {
+      elements.label.value = String(draft.label ?? "").slice(0, 60);
+      elements.amount.value = String(draft.amount ?? "");
+      if (CATEGORIES.includes(draft.category)) elements.category.value = draft.category;
+      if (isValidDateKey(draft.date)) elements.date.value = draft.date;
+      elements.note.value = String(draft.note ?? "").slice(0, 120);
+      elements.recurring.checked = Boolean(draft.recurring);
+    }
+  } catch {
+    sessionStorage.removeItem(EXPENSE_DRAFT_KEY);
+  }
   elements.modal.showModal();
   setTimeout(()=>elements.label.focus(),120);
 }
-function closeExpenseModal(){elements.form.reset();elements.modal.close();}
+function saveExpenseDraft() {
+  const draft = {
+    label: elements.label.value,
+    amount: elements.amount.value,
+    category: elements.category.value,
+    date: elements.date.value,
+    note: elements.note.value,
+    recurring: elements.recurring.checked
+  };
+  const hasContent = draft.label.trim() || draft.amount || draft.note.trim() || draft.recurring;
+  if (hasContent) sessionStorage.setItem(EXPENSE_DRAFT_KEY, JSON.stringify(draft));
+  else sessionStorage.removeItem(EXPENSE_DRAFT_KEY);
+}
+function closeExpenseModal(){saveExpenseDraft();elements.form.reset();elements.modal.close();}
+function clearExpenseDraft(){sessionStorage.removeItem(EXPENSE_DRAFT_KEY);}
 function openBudgetModal(){elements.budgetInput.value=String(state.budgetLimit);elements.budgetModal.showModal();setTimeout(()=>elements.budgetInput.focus(),100);}
 
 
@@ -418,10 +482,139 @@ async function confirmAndPurgeDatabase() {
   }
 }
 
-async function exportData(){const payload={app:"MyMobileApp",version:8,exportedAt:new Date().toISOString(),data:{transactions:state.transactions,budgets:{[state.selectedMonth]:state.budgetLimit},recurringExpenses:state.recurringExpenses,agenda:state.agenda}};const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}));const link=document.createElement("a");link.href=url;link.download=`MyMobileApp-${new Date().toISOString().slice(0,10)}.json`;link.click();URL.revokeObjectURL(url);showToast("Sauvegarde exportée");}
-async function importData(file){if(!file)return;try{const payload=JSON.parse(await file.text()),data=payload.data??payload;if(!Array.isArray(data.transactions))throw new Error("Transactions invalides");const expenses=data.transactions.filter(item=>item&&item.type!=="income"&&Number(item.amount)>0&&/^\d{4}-\d{2}-\d{2}$/.test(item.date||""));await replaceTransactions(expenses);if(data.budgets&&typeof data.budgets==="object"){for(const [month,value] of Object.entries(data.budgets)){if(/^\d{4}-\d{2}$/.test(month)&&Number.isFinite(Number(value)))await saveSetting(budgetKey(month),Math.max(0,Number(value)));}}else if(Number.isFinite(Number(data.budgetLimit))){await saveSetting(budgetKey(state.selectedMonth),Math.max(0,Number(data.budgetLimit)));}if(Array.isArray(data.recurringExpenses)){state.recurringExpenses=data.recurringExpenses.filter(item=>item&&item.id&&item.label&&Number(item.amount)>0);await saveRecurringExpenses();}if(data.agenda){state.agenda=normalizeAgenda(data.agenda);await saveSetting(AGENDA_KEY,state.agenda);renderAgenda();}state.transactions=await getAllTransactions();state.budgetLimit=await loadBudget(state.selectedMonth);render();showToast("Données importées");}catch(error){console.error(error);showToast("Fichier JSON invalide");}}
+function normalizeImportedTransaction(item) {
+  const amount = Number(item?.amount);
+  if (
+    !item || item.type === "income" ||
+    typeof item.label !== "string" || !item.label.trim() || item.label.trim().length > 60 ||
+    !Number.isFinite(amount) || amount <= 0 || amount > 100000000 ||
+    !isValidDateKey(item.date) || !CATEGORIES.includes(item.category) ||
+    String(item.note ?? "").length > 120
+  ) return null;
+
+  return {
+    ...item,
+    id: typeof item.id === "string" && item.id ? item.id : createId(),
+    type: "expense",
+    label: item.label.trim(),
+    amount: Math.round(amount * 100) / 100,
+    note: String(item.note ?? "").trim(),
+    createdAt: Number(item.createdAt) || Date.now()
+  };
+}
+
+function normalizeImportedRecurrence(item) {
+  const amount = Number(item?.amount);
+  if (
+    !item || typeof item.id !== "string" || !item.id ||
+    typeof item.label !== "string" || !item.label.trim() || item.label.trim().length > 60 ||
+    !Number.isFinite(amount) || amount <= 0 || amount > 100000000 ||
+    !CATEGORIES.includes(item.category) || !/^\d{4}-\d{2}$/.test(item.startMonth || "") ||
+    Number(item.day) < 1 || Number(item.day) > 31 || String(item.note ?? "").length > 120
+  ) return null;
+
+  return {
+    ...item,
+    label: item.label.trim(),
+    amount: Math.round(amount * 100) / 100,
+    day: Number(item.day),
+    note: String(item.note ?? "").trim()
+  };
+}
+
+function importedSettings(data) {
+  const settings = [];
+  const budgets = data.budgets && typeof data.budgets === "object"
+    ? data.budgets
+    : Number.isFinite(Number(data.budgetLimit))
+      ? { [state.selectedMonth]: data.budgetLimit }
+      : {};
+
+  for (const [month, rawValue] of Object.entries(budgets)) {
+    const value = Number(rawValue);
+    if (/^\d{4}-\d{2}$/.test(month) && Number.isFinite(value) && value >= 0) {
+      settings.push({ key: budgetKey(month), value: Math.round(value * 100) / 100 });
+    }
+  }
+  return settings;
+}
+
+async function exportData() {
+  try {
+    const settings = await getAllSettings();
+    const budgets = Object.fromEntries(
+      settings
+        .filter(item => item.key.startsWith("budgetLimit:"))
+        .map(item => [item.key.slice("budgetLimit:".length), item.value])
+    );
+    const payload = {
+      app: "MyMobileApp",
+      version: 11,
+      exportedAt: new Date().toISOString(),
+      data: { transactions: state.transactions, budgets, recurringExpenses: state.recurringExpenses, agenda: state.agenda }
+    };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `MyMobileApp-${localDateKey()}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    localStorage.setItem(LAST_EXPORT_KEY, new Date().toISOString());
+    updateLastExportInfo();
+    showToast("Sauvegarde complète exportée");
+  } catch (error) {
+    console.error(error);
+    showToast("Export impossible");
+  }
+}
+
+async function importData(file) {
+  if (!file) return;
+  try {
+    const payload = JSON.parse(await file.text());
+    const data = payload.data ?? payload;
+    if (!Array.isArray(data.transactions)) throw new Error("Transactions manquantes");
+
+    const expenses = data.transactions.map(normalizeImportedTransaction);
+    if (expenses.some(item => item === null)) throw new Error("Transaction invalide");
+    if (new Set(expenses.map(item => item.id)).size !== expenses.length) {
+      throw new Error("Identifiants de transactions dupliqués");
+    }
+
+    const recurringExpenses = Array.isArray(data.recurringExpenses)
+      ? data.recurringExpenses.map(normalizeImportedRecurrence)
+      : [];
+    if (recurringExpenses.some(item => item === null)) throw new Error("Récurrence invalide");
+    if (new Set(recurringExpenses.map(item => item.id)).size !== recurringExpenses.length) {
+      throw new Error("Identifiants de récurrences dupliqués");
+    }
+
+    const agenda = normalizeAgenda(data.agenda);
+    const settings = [
+      ...importedSettings(data),
+      { key: RECURRING_KEY, value: recurringExpenses },
+      { key: AGENDA_KEY, value: agenda }
+    ];
+
+    if (!confirm("Remplacer toutes les données locales par cette sauvegarde ?")) return;
+    await replaceAppData(expenses, settings);
+
+    state.transactions = expenses;
+    state.recurringExpenses = recurringExpenses;
+    state.agenda = agenda;
+    state.budgetLimit = await loadBudget(state.selectedMonth);
+    renderAgenda();
+    render();
+    showToast("Données restaurées");
+  } catch (error) {
+    console.error(error);
+    showToast("Sauvegarde invalide");
+  }
+}
 
 CATEGORIES.forEach(category=>{elements.category.add(new Option(category,category));elements.categoryFilter.add(new Option(category,category));});
+elements.form.addEventListener("input", saveExpenseDraft);
+elements.form.addEventListener("change", saveExpenseDraft);
 
 elements.form.addEventListener("submit", async event => {
   event.preventDefault();
@@ -433,7 +626,7 @@ elements.form.addEventListener("submit", async event => {
   const category = elements.category.value;
   const note = elements.note.value.trim();
 
-  if (!label || label.length > 60 || !Number.isFinite(amount) || amount <= 0 || amount > 100000000 || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !CATEGORIES.includes(category)) {
+  if (!label || label.length > 60 || !Number.isFinite(amount) || amount <= 0 || amount > 100000000 || !isValidDateKey(date) || !CATEGORIES.includes(category)) {
     showToast("Vérifie les informations saisies");
     return;
   }
@@ -471,7 +664,9 @@ elements.form.addEventListener("submit", async event => {
     }
 
     state.transactions.push(saved);
-    closeExpenseModal();
+    clearExpenseDraft();
+    elements.form.reset();
+    elements.modal.close();
     render();
     showToast(recurrenceId ? "Dépense mensuelle ajoutée" : "Dépense ajoutée");
   } catch (error) {
@@ -530,8 +725,43 @@ $("#budgetForm").onsubmit=async event=>{event.preventDefault();const value=Numbe
 $("#monthPickerButton").onclick=()=>{elements.monthInput.value=state.selectedMonth;elements.monthModal.showModal();};
 $("#closeMonthModal").onclick=()=>elements.monthModal.close();
 $("#monthForm").onsubmit=async event=>{event.preventDefault();await selectMonth(elements.monthInput.value);elements.monthModal.close();};
-document.querySelectorAll("#chartRange button").forEach(button=>button.onclick=()=>{state.chartRange=button.dataset.range;document.querySelectorAll("#chartRange button").forEach(item=>item.classList.toggle("active",item===button));renderTrendChart();});
-document.querySelectorAll(".nav-item").forEach(button=>button.onclick=()=>{document.querySelectorAll(".nav-item").forEach(item=>item.classList.toggle("active",item===button));const map={dashboard:"#periodSection",analytics:"#statsSection",history:"#historySection",settings:"#settingsSection"};document.querySelector(map[button.dataset.section])?.scrollIntoView({behavior:"smooth",block:"start"});});
+document.querySelectorAll("#chartRange button").forEach(button=>button.onclick=()=>{state.chartRange=button.dataset.range;document.querySelectorAll("#chartRange button").forEach(item=>item.classList.toggle("active",item===button));void renderTrendChart();});
+const budgetSections = {
+  dashboard: $("#periodSection"),
+  analytics: $("#statsSection"),
+  history: $("#historySection"),
+  settings: $("#settingsSection")
+};
+
+function setActiveNavigation(section) {
+  document.querySelectorAll(".nav-item").forEach(item => {
+    const active = item.dataset.section === section;
+    item.classList.toggle("active", active);
+    if (active) item.setAttribute("aria-current", "page");
+    else item.removeAttribute("aria-current");
+  });
+}
+
+function updateActiveNavigation() {
+  if ($("#budgetNav").hidden) return;
+  const threshold = 150;
+  let activeSection = "dashboard";
+  for (const [section, element] of Object.entries(budgetSections)) {
+    if (!element.hidden && element.getBoundingClientRect().top <= threshold) activeSection = section;
+  }
+  setActiveNavigation(activeSection);
+}
+
+let navigationFrame;
+window.addEventListener("scroll", () => {
+  cancelAnimationFrame(navigationFrame);
+  navigationFrame = requestAnimationFrame(updateActiveNavigation);
+}, { passive: true });
+
+document.querySelectorAll(".nav-item").forEach(button=>button.onclick=()=>{
+  setActiveNavigation(button.dataset.section);
+  budgetSections[button.dataset.section]?.scrollIntoView({behavior:"smooth",block:"start"});
+});
 document.querySelector('[data-focus="expense"]').onclick=()=>{document.querySelector(".search-heading")?.scrollIntoView({behavior:"smooth"});};
 
 window.addEventListener("beforeinstallprompt",event=>{event.preventDefault();state.deferredPrompt=event;$("#installButton").hidden=false;});
@@ -559,24 +789,14 @@ function openModule(name){
   $("#floatingAdd").hidden=name!=="budget";
   $("#backToPortal").hidden=false;
   $("#pageTitle").innerHTML=name==="budget"?'MyBudget <span class="title-owner">- Stevens</span>':'MyAgenda <span class="title-owner">- Stevens</span>';
+  if(name==="budget") setActiveNavigation("dashboard");
   window.scrollTo({top:0,behavior:"smooth"});
 }
 $("#openBudgetModule").addEventListener("click",()=>openModule("budget"));
 $("#openAgendaModule").addEventListener("click",()=>openModule("agenda"));
 $("#backToPortal").addEventListener("click",showPortal);
 
-async function initialize(){try{await migrateLegacyLocalStorage(LEGACY_STORAGE_KEY);await loadRecurringExpenses();state.agenda=normalizeAgenda(await getSetting(AGENDA_KEY,null));renderAgenda();state.transactions=(await getAllTransactions()).filter(item=>item.type!=="income");await materializeRecurringExpenses(state.selectedMonth);state.budgetLimit=await loadBudget(state.selectedMonth);render();showPortal();}catch(error){console.error(error);showToast("Impossible de charger les données locales");render();showPortal();}}
-
-// Empêche le zoom par pincement et le double-tap dans la PWA iOS.
-["gesturestart", "gesturechange", "gestureend"].forEach(eventName => {
-  document.addEventListener(eventName, event => event.preventDefault(), { passive: false });
-});
-let lastTouchEnd = 0;
-document.addEventListener("touchend", event => {
-  const now = Date.now();
-  if (now - lastTouchEnd < 300) event.preventDefault();
-  lastTouchEnd = now;
-}, { passive: false });
+async function initialize(){try{updateLastExportInfo();await migrateLegacyLocalStorage(LEGACY_STORAGE_KEY);await loadRecurringExpenses();state.agenda=normalizeAgenda(await getSetting(AGENDA_KEY,null));renderAgenda();state.transactions=(await getAllTransactions()).filter(item=>item.type!=="income");await materializeRecurringExpenses(state.selectedMonth);state.budgetLimit=await loadBudget(state.selectedMonth);render();showPortal();}catch(error){console.error(error);showToast("Impossible de charger les données locales");render();showPortal();}}
 
 const savedTheme=localStorage.getItem(THEME_KEY);document.documentElement.dataset.theme=savedTheme||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");
 initialize();

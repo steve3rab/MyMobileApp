@@ -101,6 +101,38 @@ export async function getSetting(key, fallback = null) {
   return result?.value ?? fallback;
 }
 
+export async function getAllSettings() {
+  const db = await openDatabase();
+  const tx = db.transaction(SETTINGS, "readonly");
+  return waitForRequest(tx.objectStore(SETTINGS).getAll());
+}
+
+export async function replaceAppData(transactions, settings) {
+  const db = await openDatabase();
+  const tx = db.transaction([TRANSACTIONS, SETTINGS], "readwrite");
+  const transactionStore = tx.objectStore(TRANSACTIONS);
+  const settingStore = tx.objectStore(SETTINGS);
+
+  transactionStore.clear();
+  settingStore.clear();
+
+  for (const transaction of transactions) {
+    transactionStore.put({
+      ...transaction,
+      id: transaction.id || crypto.randomUUID(),
+      amount: Number(transaction.amount),
+      month: transaction.date.slice(0, 7),
+      createdAt: transaction.createdAt || Date.now()
+    });
+  }
+
+  for (const setting of settings) {
+    settingStore.put(setting);
+  }
+
+  await waitForTransaction(tx);
+}
+
 export async function migrateLegacyLocalStorage(storageKey) {
   const raw = localStorage.getItem(storageKey);
   if (!raw) return false;
