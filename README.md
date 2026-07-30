@@ -1,4 +1,4 @@
-# MyMobileApp — version 11
+# MyMobileApp — version 13
 
 ## Nouveau portail
 - écran d’accueil avec deux modules distincts ;
@@ -14,4 +14,7 @@
 - comparaison des dépenses avec le mois précédent ;
 - brouillon temporaire de dépense et suivi du dernier export ;
 - confirmations accessibles et contrastes renforcés ;
-- cache PWA mis à jour en v11.
+- mise en page plus aérée, modales adaptatives et paliers responsive ;
+- zoom désactivé pour un comportement stable en mode application ;
+- navigation Réglages stabilisée pendant le défilement en mode PWA ;
+- cache PWA mis à jour en v13.

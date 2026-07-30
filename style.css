@@ -345,3 +345,354 @@ html,body{touch-action:auto}
 #backToPortal { font-size: 1.5rem; }
 .bottom-nav { grid-template-columns: repeat(4, 1fr); }
 #agendaModule .agenda-card { margin-top: 18px; }
+
+
+/* Mise en page aérée et responsive */
+:root {
+  --content-gap: clamp(22px, 3vw, 32px);
+  --card-padding: clamp(22px, 3vw, 30px);
+  --control-height: 50px;
+}
+
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  touch-action: pan-x pan-y;
+}
+
+.app-shell {
+  width: min(100%, 1040px);
+  padding:
+    env(safe-area-inset-top)
+    clamp(16px, 3vw, 32px)
+    calc(126px + env(safe-area-inset-bottom));
+}
+
+main,
+.module-view {
+  min-width: 0;
+}
+
+.module-view:not([hidden]) {
+  display: grid;
+  gap: var(--content-gap);
+}
+
+.card,
+.summary-card {
+  border-radius: clamp(22px, 3vw, 28px);
+}
+
+.card {
+  padding: var(--card-padding);
+}
+
+.summary-grid {
+  gap: clamp(16px, 2.2vw, 24px);
+}
+
+.summary-card {
+  min-height: 144px;
+  padding: clamp(22px, 2.8vw, 28px);
+  gap: 14px;
+}
+
+.section-heading {
+  gap: 22px;
+  margin-bottom: 26px;
+}
+
+.progress-card,
+.chart-card,
+#historySection,
+.settings-card {
+  min-width: 0;
+}
+
+.category-layout {
+  gap: clamp(24px, 4vw, 42px);
+}
+
+.category-legend,
+.transaction-list {
+  gap: 16px;
+}
+
+.category-row {
+  gap: 12px;
+  padding-block: 4px;
+}
+
+.search-panel {
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.search-box,
+.search-panel select {
+  min-height: 52px;
+}
+
+.transaction-item {
+  min-height: 78px;
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: 20px;
+}
+
+.action-grid {
+  gap: 16px;
+}
+
+.primary-button,
+.secondary-button,
+.danger-button {
+  min-height: 50px;
+  padding: 14px 18px;
+}
+
+.bottom-nav {
+  width: min(calc(100% - 32px), 976px);
+  padding: 11px;
+}
+
+.nav-item {
+  min-height: 58px;
+  gap: 5px;
+}
+
+.portal-view {
+  padding: 24px 0 36px;
+}
+
+.portal-hero {
+  margin: 30px 6px 34px;
+}
+
+.module-grid {
+  gap: 22px;
+}
+
+.module-card {
+  min-height: 112px;
+  gap: 20px;
+  padding: 26px;
+}
+
+.portal-tools {
+  margin-top: 30px;
+}
+
+.portal-tools summary {
+  padding: 20px 22px;
+}
+
+.portal-tools-content {
+  gap: 22px;
+  padding: 2px 22px 22px;
+}
+
+.agenda-grid {
+  gap: 24px;
+}
+
+.agenda-person {
+  padding: 22px;
+}
+
+.agenda-days {
+  gap: 18px;
+}
+
+.agenda-day {
+  gap: 18px;
+  padding: 18px;
+}
+
+.agenda-time-label {
+  gap: 10px;
+}
+
+.agenda-time-label input {
+  min-height: 52px;
+  padding: 12px 14px;
+}
+
+.modal {
+  width: min(calc(100% - 40px), 640px);
+  max-width: 100%;
+  max-height: calc(100dvh - 40px);
+  overflow: hidden;
+}
+
+.small-modal {
+  width: min(calc(100% - 40px), 480px);
+  max-width: 480px;
+}
+
+.modal-content {
+  max-height: calc(100dvh - 40px);
+  gap: 22px;
+  padding: clamp(24px, 4vw, 32px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.modal-header {
+  gap: 20px;
+}
+
+.modal-content label {
+  gap: 10px;
+  font-size: .9rem;
+}
+
+.modal-content input,
+.modal-content select,
+.modal-content textarea {
+  min-height: 52px;
+  padding: 14px 16px;
+}
+
+.modal-content textarea {
+  min-height: 104px;
+}
+
+.modal-actions {
+  gap: 16px;
+  margin-top: 6px;
+}
+
+.recurring-option {
+  gap: 16px;
+  padding: 18px;
+}
+
+@media (min-width: 900px) {
+  .summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .module-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .agenda-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 600px) and (max-width: 899px) {
+  .agenda-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .agenda-day {
+    grid-template-columns: minmax(90px, .6fr) 1fr 1fr;
+  }
+}
+
+@media (max-width: 599px) {
+  :root {
+    --content-gap: 22px;
+    --card-padding: 22px;
+  }
+
+  .app-shell {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .topbar {
+    padding: 22px 2px 26px;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .balance-card {
+    grid-column: auto;
+  }
+
+  .section-heading {
+    align-items: flex-start;
+    margin-bottom: 22px;
+  }
+
+  .category-layout {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .category-legend {
+    width: 100%;
+  }
+
+  .agenda-day {
+    grid-template-columns: 1fr;
+  }
+
+  .agenda-day > strong {
+    grid-column: auto;
+    margin-bottom: 2px;
+  }
+
+  .modal,
+  .small-modal {
+    width: calc(100% - 16px);
+    max-width: none;
+    max-height: calc(100dvh - 16px);
+    border-radius: 24px;
+  }
+
+  .modal-content {
+    max-height: calc(100dvh - 16px);
+    gap: 20px;
+    padding: 22px 20px calc(24px + env(safe-area-inset-bottom));
+  }
+
+  .modal-actions {
+    position: sticky;
+    bottom: calc(-24px - env(safe-area-inset-bottom));
+    z-index: 2;
+    padding: 14px 0 calc(14px + env(safe-area-inset-bottom));
+    background: var(--surface-solid);
+  }
+}
+
+@media (max-width: 380px) {
+  .app-shell {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .card,
+  .summary-card,
+  .agenda-person {
+    padding: 18px;
+  }
+
+  .month-switcher {
+    gap: 8px;
+  }
+
+  .today-button {
+    display: none;
+  }
+
+  .modal-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-height: 560px) and (orientation: landscape) {
+  .modal,
+  .small-modal,
+  .modal-content {
+    max-height: calc(100dvh - 12px);
+  }
+}

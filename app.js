@@ -549,7 +549,7 @@ async function exportData() {
     );
     const payload = {
       app: "MyMobileApp",
-      version: 11,
+      version: 13,
       exportedAt: new Date().toISOString(),
       data: { transactions: state.transactions, budgets, recurringExpenses: state.recurringExpenses, agenda: state.agenda }
     };
@@ -744,6 +744,17 @@ function setActiveNavigation(section) {
 
 function updateActiveNavigation() {
   if ($("#budgetNav").hidden) return;
+  if (pendingNavigationSection) {
+    setActiveNavigation(pendingNavigationSection);
+    return;
+  }
+  const documentHeight = document.documentElement.scrollHeight;
+  const settingsVisible = budgetSections.settings.getBoundingClientRect().top < window.innerHeight - 96;
+  const reachedPageEnd = window.scrollY > 20 && settingsVisible && window.scrollY + window.innerHeight >= documentHeight - 48;
+  if (reachedPageEnd) {
+    setActiveNavigation("settings");
+    return;
+  }
   const threshold = 150;
   let activeSection = "dashboard";
   for (const [section, element] of Object.entries(budgetSections)) {
@@ -753,14 +764,23 @@ function updateActiveNavigation() {
 }
 
 let navigationFrame;
+let pendingNavigationSection = null;
+let navigationUnlockTimer;
 window.addEventListener("scroll", () => {
   cancelAnimationFrame(navigationFrame);
   navigationFrame = requestAnimationFrame(updateActiveNavigation);
 }, { passive: true });
 
 document.querySelectorAll(".nav-item").forEach(button=>button.onclick=()=>{
-  setActiveNavigation(button.dataset.section);
-  budgetSections[button.dataset.section]?.scrollIntoView({behavior:"smooth",block:"start"});
+  const section = button.dataset.section;
+  pendingNavigationSection = section;
+  setActiveNavigation(section);
+  budgetSections[section]?.scrollIntoView({behavior:"smooth",block:"start"});
+  clearTimeout(navigationUnlockTimer);
+  navigationUnlockTimer = setTimeout(() => {
+    pendingNavigationSection = null;
+    updateActiveNavigation();
+  }, 1200);
 });
 document.querySelector('[data-focus="expense"]').onclick=()=>{document.querySelector(".search-heading")?.scrollIntoView({behavior:"smooth"});};
 
@@ -797,6 +817,10 @@ $("#openAgendaModule").addEventListener("click",()=>openModule("agenda"));
 $("#backToPortal").addEventListener("click",showPortal);
 
 async function initialize(){try{updateLastExportInfo();await migrateLegacyLocalStorage(LEGACY_STORAGE_KEY);await loadRecurringExpenses();state.agenda=normalizeAgenda(await getSetting(AGENDA_KEY,null));renderAgenda();state.transactions=(await getAllTransactions()).filter(item=>item.type!=="income");await materializeRecurringExpenses(state.selectedMonth);state.budgetLimit=await loadBudget(state.selectedMonth);render();showPortal();}catch(error){console.error(error);showToast("Impossible de charger les données locales");render();showPortal();}}
+
+["gesturestart", "gesturechange", "gestureend"].forEach(eventName => {
+  document.addEventListener(eventName, event => event.preventDefault(), { passive: false });
+});
 
 const savedTheme=localStorage.getItem(THEME_KEY);document.documentElement.dataset.theme=savedTheme||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");
 initialize();
