@@ -639,6 +639,48 @@ main,
   }
 }
 
+/* Confinement strict des champs natifs dans la modale MyCar */
+#carMaintenanceForm {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+#carMaintenanceForm label,
+#carMaintenanceForm .car-form-row {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+#carMaintenanceDate,
+#carMaintenanceNextDate {
+  display: block;
+  inline-size: 100% !important;
+  min-inline-size: 0 !important;
+  max-inline-size: 100% !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+#carMaintenanceDate::-webkit-date-and-time-value,
+#carMaintenanceNextDate::-webkit-date-and-time-value,
+#carMaintenanceDate::-webkit-datetime-edit,
+#carMaintenanceNextDate::-webkit-datetime-edit {
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
 @media (min-width: 600px) and (max-width: 899px) {
   .agenda-grid {
     grid-template-columns: 1fr;

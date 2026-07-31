@@ -1,4 +1,4 @@
-# MyMobileApp — version 25
+# MyMobileApp — version 26
 
 ## Nouveau portail
 - écran d’accueil avec deux modules distincts ;
@@ -31,4 +31,5 @@
 - gouttière interne et découpage strict avant les séparateurs ;
 - nouveau module MyCar pour suivre les entretiens, coûts, kilométrage et échéances ;
 - historique filtrable et sauvegarde MyCar incluse dans l’export global ;
-- cache PWA mis à jour en v25.
+- champs date MyCar confinés à la largeur réelle de la modale mobile ;
+- cache PWA mis à jour en v26.

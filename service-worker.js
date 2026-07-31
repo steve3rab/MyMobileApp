@@ -1,6 +1,6 @@
 
-const CACHE = "mymobileapp-v25";
-const ASSETS = ["./","./index.html","./style.css?v=25","./app.js?v=25","./database.js?v=25","./mycar.js?v=25","./manifest.json?v=25","./icon-192.svg","./icon-512.svg"];
+const CACHE = "mymobileapp-v26";
+const ASSETS = ["./","./index.html","./style.css?v=26","./app.js?v=26","./database.js?v=26","./mycar.js?v=26","./manifest.json?v=26","./icon-192.svg","./icon-512.svg"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
 });
