@@ -1,7 +1,7 @@
 {
   "name": "MyMobileApp",
   "short_name": "MyMobileApp",
-  "description": "Application mobile modulaire de suivi budgétaire.",
+  "description": "Application mobile modulaire pour le budget, l’agenda familial et l’entretien automobile.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

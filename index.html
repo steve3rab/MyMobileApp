@@ -8,9 +8,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="MyMobileApp" />
   <title>MyMobileApp</title>
-  <link rel="manifest" href="manifest.json?v=24" />
+  <link rel="manifest" href="manifest.json?v=25" />
   <link rel="apple-touch-icon" href="icon-192.svg" />
-  <link rel="stylesheet" href="style.css?v=24" />
+  <link rel="stylesheet" href="style.css?v=25" />
 </head>
 <body>
   <div class="app-shell">
@@ -48,6 +48,11 @@
             <span><strong>MyAgenda</strong><small>Horaires de Parent 1, Parent 2 et Enfant 1</small></span>
             <b>›</b>
           </button>
+          <button id="openCarModule" class="module-card" type="button">
+            <span class="module-icon car-module-icon">CAR</span>
+            <span><strong>MyCar</strong><small>Entretiens, dépenses, kilométrage et prochaines échéances</small></span>
+            <b>&rsaquo;</b>
+          </button>
         </div>
         <details class="portal-tools">
           <summary>
@@ -58,7 +63,7 @@
             <span class="details-chevron" aria-hidden="true">›</span>
           </summary>
           <div class="portal-tools-content">
-            <p>La purge efface toutes les dépenses, les budgets, les récurrences et les horaires enregistrés sur cet appareil.</p>
+            <p>La purge efface toutes les dépenses, les budgets, les récurrences, les horaires et les entretiens de voiture enregistrés sur cet appareil.</p>
             <button id="purgeDatabase" class="danger-button" type="button">Purger la base locale</button>
           </div>
         </details>
@@ -202,6 +207,56 @@
       </section>
       </div>
 
+      <div id="carModule" class="module-view" hidden>
+        <section class="car-hero card reveal">
+          <div>
+            <span class="muted">Carnet d’entretien</span>
+            <h2>Suivi de la voiture</h2>
+            <p>Centralise les interventions réalisées et anticipe les prochaines échéances.</p>
+          </div>
+          <button id="openCarMaintenanceModal" class="primary-button" type="button">+ Ajouter un entretien</button>
+        </section>
+
+        <section class="car-summary-grid reveal" aria-label="Résumé des entretiens">
+          <article class="summary-card">
+            <span>Coût total</span>
+            <strong id="carTotalCost">0 €</strong>
+            <small>Tous les entretiens</small>
+          </article>
+          <article class="summary-card">
+            <span>Interventions</span>
+            <strong id="carMaintenanceCount">0</strong>
+            <small>Éléments enregistrés</small>
+          </article>
+          <article class="summary-card car-next-card">
+            <span>Prochaine échéance</span>
+            <strong id="carNextDue">Aucune</strong>
+            <small id="carNextDueDetail">Rien de planifié</small>
+          </article>
+        </section>
+
+        <section class="card reveal">
+          <div class="section-heading">
+            <div><span class="muted">Carnet</span><h2>Historique des entretiens</h2></div>
+          </div>
+          <div class="car-filters">
+            <label class="search-box">
+              <span>⌕</span>
+              <input id="carSearch" type="search" placeholder="Rechercher un entretien…" />
+            </label>
+            <select id="carCategoryFilter" aria-label="Filtrer les entretiens par catégorie">
+              <option value="all">Toutes les catégories</option>
+            </select>
+          </div>
+          <div id="carMaintenanceList" class="car-maintenance-list"></div>
+          <div id="carEmptyState" class="empty-state">
+            <div class="empty-icon">CAR</div>
+            <h3>Aucun entretien</h3>
+            <p>Ajoute la première intervention réalisée sur la voiture.</p>
+          </div>
+        </section>
+      </div>
+
       <div id="settingsModule" class="module-view" hidden>
       <section id="settingsSection" class="card settings-card reveal">
         <div class="section-heading">
@@ -315,7 +370,43 @@
     </form>
   </dialog>
 
+  <dialog id="carMaintenanceModal" class="modal">
+    <form id="carMaintenanceForm" method="dialog" class="modal-content">
+      <div class="modal-header">
+        <div><span class="muted">MyCar</span><h2>Ajouter un entretien</h2></div>
+        <button type="button" id="closeCarMaintenanceModal" class="icon-button" aria-label="Fermer">×</button>
+      </div>
+      <label>Catégorie
+        <select id="carMaintenanceCategory" required></select>
+      </label>
+      <div class="car-form-row">
+        <label>Date
+          <input id="carMaintenanceDate" type="date" required />
+        </label>
+        <label>Prix
+          <div class="money-input">
+            <input id="carMaintenancePrice" type="number" min="0" max="1000000" step="0.01" placeholder="0,00" required />
+            <span>€</span>
+          </div>
+        </label>
+      </div>
+      <label>Kilométrage <span class="optional-label">optionnel</span>
+        <input id="carMaintenanceMileage" type="number" min="0" max="5000000" step="1" placeholder="Ex. 85 000" />
+      </label>
+      <label>Prochaine échéance <span class="optional-label">optionnel</span>
+        <input id="carMaintenanceNextDate" type="date" />
+      </label>
+      <label>Note <span class="optional-label">optionnel</span>
+        <textarea id="carMaintenanceNote" maxlength="240" placeholder="Garage, pièces changées, référence de facture…"></textarea>
+      </label>
+      <div class="modal-actions">
+        <button type="button" id="cancelCarMaintenance" class="secondary-button">Annuler</button>
+        <button type="submit" class="primary-button">Enregistrer</button>
+      </div>
+    </form>
+  </dialog>
+
   <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
-  <script type="module" src="app.js?v=24"></script>
+  <script type="module" src="app.js?v=25"></script>
 </body>
 </html>

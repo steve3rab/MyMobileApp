@@ -1116,6 +1116,220 @@ main,
   background: var(--bg);
 }
 
+
+/* MyCar */
+.car-module-icon {
+  font-size: .78rem;
+  letter-spacing: .06em;
+}
+
+.car-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.car-hero h2 {
+  margin: 5px 0 8px;
+  font-size: clamp(1.35rem, 4vw, 1.8rem);
+}
+
+.car-hero p {
+  max-width: 580px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.car-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.car-next-card {
+  border-color: color-mix(in srgb,var(--primary) 28%,var(--border));
+  background: linear-gradient(145deg,var(--surface),color-mix(in srgb,var(--primary-soft) 52%,var(--surface)));
+}
+
+.car-next-card strong {
+  font-size: clamp(1.05rem, 3vw, 1.32rem);
+}
+
+.car-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 260px);
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.car-filters .search-box,
+.car-filters select {
+  min-height: 52px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  color: var(--text);
+  background: var(--surface-solid);
+}
+
+.car-filters select {
+  width: 100%;
+  min-width: 0;
+  padding: 0 14px;
+}
+
+.car-maintenance-list {
+  display: grid;
+  gap: 14px;
+}
+
+.car-maintenance-item {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 44px;
+  align-items: start;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 19px;
+  background: var(--surface-solid);
+}
+
+.car-maintenance-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  color: var(--primary);
+  background: var(--primary-soft);
+  font-size: .72rem;
+  font-weight: 950;
+}
+
+.car-maintenance-copy {
+  min-width: 0;
+}
+
+.car-maintenance-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.car-maintenance-title span {
+  color: var(--primary);
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.car-maintenance-copy p,
+.car-maintenance-copy small {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.car-next-badge {
+  display: inline-flex;
+  margin-top: 10px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: var(--primary);
+  background: var(--primary-soft);
+  font-size: .72rem;
+  font-weight: 850;
+}
+
+.car-next-badge.is-overdue,
+#carNextDueDetail.is-overdue {
+  color: var(--danger);
+}
+
+.car-next-badge.is-overdue {
+  background: color-mix(in srgb,var(--danger) 12%,transparent);
+}
+
+.delete-car-maintenance {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 12px;
+  color: var(--danger);
+  background: color-mix(in srgb,var(--danger) 10%,transparent);
+  cursor: pointer;
+}
+
+.car-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  min-width: 0;
+}
+
+.car-form-row > label {
+  min-width: 0;
+}
+
+.optional-label {
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 650;
+}
+
+@media (min-width: 900px) {
+  .module-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 699px) {
+  .car-hero {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .car-hero .primary-button {
+    width: 100%;
+  }
+
+  .car-summary-grid,
+  .car-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .car-form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 420px) {
+  .car-maintenance-item {
+    grid-template-columns: 42px minmax(0, 1fr) 36px;
+    gap: 10px;
+    padding: 13px;
+  }
+
+  .car-maintenance-icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .delete-car-maintenance {
+    width: 36px;
+    height: 36px;
+  }
+
+  .car-maintenance-title {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
 .agenda-time-cell input:focus {
   outline: none;
   border-color: var(--primary);

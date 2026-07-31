@@ -8,7 +8,8 @@ import {
   replaceAppData,
   saveSetting,
   purgeDatabase
-} from "./database.js?v=24";
+} from "./database.js?v=25";
+import { initializeMyCar, reloadMyCarData } from "./mycar.js?v=25";
 
 const LEGACY_STORAGE_KEY = "myMobileApp.data.v3";
 const THEME_KEY = "myMobileApp.theme";
@@ -535,7 +536,7 @@ async function saveAgendaFromForm() {
 }
 
 async function confirmAndPurgeDatabase() {
-  const confirmed = confirm("Supprimer définitivement toutes les dépenses, budgets, récurrences et horaires enregistrés sur ce téléphone ?");
+  const confirmed = confirm("Supprimer définitivement toutes les dépenses, budgets, récurrences, horaires et entretiens de voiture enregistrés sur ce téléphone ?");
   if (!confirmed) return;
 
   const secondConfirmation = confirm("Cette action est irréversible. Continuer ?");
@@ -606,12 +607,16 @@ function importedSettings(data) {
       settings.push({ key: budgetKey(month), value: Math.round(value * 100) / 100 });
     }
   }
+  if (Array.isArray(data.carMaintenanceRecords)) {
+    settings.push({ key: "carMaintenanceRecords", value: data.carMaintenanceRecords });
+  }
   return settings;
 }
 
 async function exportData() {
   try {
     const settings = await getAllSettings();
+    const carMaintenanceRecords = await getSetting("carMaintenanceRecords", []);
     const budgets = Object.fromEntries(
       settings
         .filter(item => item.key.startsWith("budgetLimit:"))
@@ -619,9 +624,9 @@ async function exportData() {
     );
     const payload = {
       app: "MyMobileApp",
-      version: 24,
+      version: 25,
       exportedAt: new Date().toISOString(),
-      data: { transactions: state.transactions, budgets, recurringExpenses: state.recurringExpenses, agenda: state.agenda }
+      data: { transactions: state.transactions, budgets, recurringExpenses: state.recurringExpenses, agenda: state.agenda, carMaintenanceRecords }
     };
     const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
     const link = document.createElement("a");
@@ -673,6 +678,7 @@ async function importData(file) {
     state.recurringExpenses = recurringExpenses;
     state.agenda = agenda;
     state.budgetLimit = await loadBudget(state.selectedMonth);
+    await reloadMyCarData();
     renderAgenda();
     render();
     showToast("Données restaurées");
@@ -826,13 +832,14 @@ document.querySelector('[data-focus="expense"]').onclick=()=>{document.querySele
 
 window.addEventListener("beforeinstallprompt",event=>{event.preventDefault();state.deferredPrompt=event;$("#installButton").hidden=false;});
 $("#installButton").onclick=async()=>{if(!state.deferredPrompt)return;state.deferredPrompt.prompt();await state.deferredPrompt.userChoice;state.deferredPrompt=null;$("#installButton").hidden=true;};
-if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js?v=24").catch(console.error));
+if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js?v=25").catch(console.error));
 
 
 function showPortal(){
   $("#portalSection").hidden=false;
   $("#budgetModule").hidden=true;
   $("#agendaModule").hidden=true;
+  $("#carModule").hidden=true;
   $("#settingsModule").hidden=true;
   $("#budgetNav").hidden=true;
   $("#floatingAdd").hidden=true;
@@ -844,19 +851,22 @@ function openModule(name){
   $("#portalSection").hidden=true;
   $("#budgetModule").hidden=name!=="budget";
   $("#agendaModule").hidden=name!=="agenda";
+  $("#carModule").hidden=name!=="car";
   $("#settingsModule").hidden=name!=="budget";
   $("#budgetNav").hidden=name!=="budget";
   $("#floatingAdd").hidden=name!=="budget";
   $("#backToPortal").hidden=false;
-  $("#pageTitle").innerHTML=name==="budget"?'MyBudget <span class="title-owner">- Stevens</span>':'MyAgenda <span class="title-owner">- Stevens</span>';
+  const titles={budget:"MyBudget",agenda:"MyAgenda",car:"MyCar"};
+  $("#pageTitle").innerHTML=`${titles[name] ?? "MyMobileApp"} <span class="title-owner">- Stevens</span>`;
   if(name==="budget") setActiveNavigation("dashboard");
   window.scrollTo({top:0,behavior:"smooth"});
 }
 $("#openBudgetModule").addEventListener("click",()=>openModule("budget"));
 $("#openAgendaModule").addEventListener("click",()=>openModule("agenda"));
+$("#openCarModule").addEventListener("click",()=>openModule("car"));
 $("#backToPortal").addEventListener("click",showPortal);
 
-async function initialize(){try{updateLastExportInfo();await migrateLegacyLocalStorage(LEGACY_STORAGE_KEY);await loadRecurringExpenses();state.agenda=normalizeAgenda(await getSetting(AGENDA_KEY,null));renderAgenda();state.transactions=(await getAllTransactions()).filter(item=>item.type!=="income");await materializeRecurringExpenses(state.selectedMonth);state.budgetLimit=await loadBudget(state.selectedMonth);render();showPortal();}catch(error){console.error(error);showToast("Impossible de charger les données locales");render();showPortal();}}
+async function initialize(){try{updateLastExportInfo();await migrateLegacyLocalStorage(LEGACY_STORAGE_KEY);await loadRecurringExpenses();state.agenda=normalizeAgenda(await getSetting(AGENDA_KEY,null));renderAgenda();await initializeMyCar(showToast);state.transactions=(await getAllTransactions()).filter(item=>item.type!=="income");await materializeRecurringExpenses(state.selectedMonth);state.budgetLimit=await loadBudget(state.selectedMonth);render();showPortal();}catch(error){console.error(error);showToast("Impossible de charger les données locales");render();showPortal();}}
 
 ["gesturestart", "gesturechange", "gestureend"].forEach(eventName => {
   document.addEventListener(eventName, event => event.preventDefault(), { passive: false });

@@ -1,4 +1,4 @@
-# MyMobileApp — version 24
+# MyMobileApp — version 25
 
 ## Nouveau portail
 - écran d’accueil avec deux modules distincts ;
@@ -29,4 +29,6 @@
 - cellules horaires empilées sur les colonnes étroites, sans chevauchement ;
 - largeur intrinsèque des champs horaires neutralisée dans la matrice ;
 - gouttière interne et découpage strict avant les séparateurs ;
-- cache PWA mis à jour en v24.
+- nouveau module MyCar pour suivre les entretiens, coûts, kilométrage et échéances ;
+- historique filtrable et sauvegarde MyCar incluse dans l’export global ;
+- cache PWA mis à jour en v25.
