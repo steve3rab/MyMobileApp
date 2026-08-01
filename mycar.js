@@ -1,4 +1,4 @@
-import { getSetting, saveSetting } from "./database.js?v=26";
+import { getSetting, saveSetting } from "./database.js?v=28";
 
 const STORAGE_KEY = "carMaintenanceRecords";
 const CATEGORIES = [

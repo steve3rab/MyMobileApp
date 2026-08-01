@@ -8,8 +8,8 @@ import {
   replaceAppData,
   saveSetting,
   purgeDatabase
-} from "./database.js?v=26";
-import { initializeMyCar, reloadMyCarData } from "./mycar.js?v=26";
+} from "./database.js?v=28";
+import { initializeMyCar, reloadMyCarData } from "./mycar.js?v=28";
 
 const LEGACY_STORAGE_KEY = "myMobileApp.data.v3";
 const THEME_KEY = "myMobileApp.theme";
@@ -119,6 +119,7 @@ function shiftMonth(key, offset) {
 
 function showToast(message) {
   elements.toast.textContent = message;
+  elements.toast.dataset.state = /impossible|invalide|erreur|vérifie/i.test(message) ? "error" : "success";
   elements.toast.hidden = false;
   clearTimeout(showToast.timer);
   showToast.timer = setTimeout(() => { elements.toast.hidden = true; }, 2200);
@@ -624,7 +625,7 @@ async function exportData() {
     );
     const payload = {
       app: "MyMobileApp",
-      version: 26,
+      version: 28,
       exportedAt: new Date().toISOString(),
       data: { transactions: state.transactions, budgets, recurringExpenses: state.recurringExpenses, agenda: state.agenda, carMaintenanceRecords }
     };
@@ -806,8 +807,7 @@ document.querySelectorAll("#chartRange button").forEach(button=>button.onclick=(
 const budgetSections = {
   dashboard: $("#periodSection"),
   analytics: $("#statsSection"),
-  history: $("#historySection"),
-  settings: $("#settingsSection")
+  history: $("#historySection")
 };
 
 function setActiveNavigation(section) {
@@ -832,7 +832,7 @@ document.querySelector('[data-focus="expense"]').onclick=()=>{document.querySele
 
 window.addEventListener("beforeinstallprompt",event=>{event.preventDefault();state.deferredPrompt=event;$("#installButton").hidden=false;});
 $("#installButton").onclick=async()=>{if(!state.deferredPrompt)return;state.deferredPrompt.prompt();await state.deferredPrompt.userChoice;state.deferredPrompt=null;$("#installButton").hidden=true;};
-if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js?v=26").catch(console.error));
+if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js?v=28").catch(console.error));
 
 
 function showPortal(){
@@ -840,7 +840,6 @@ function showPortal(){
   $("#budgetModule").hidden=true;
   $("#agendaModule").hidden=true;
   $("#carModule").hidden=true;
-  $("#settingsModule").hidden=true;
   $("#budgetNav").hidden=true;
   $("#floatingAdd").hidden=true;
   $("#backToPortal").hidden=true;
@@ -852,7 +851,6 @@ function openModule(name){
   $("#budgetModule").hidden=name!=="budget";
   $("#agendaModule").hidden=name!=="agenda";
   $("#carModule").hidden=name!=="car";
-  $("#settingsModule").hidden=name!=="budget";
   $("#budgetNav").hidden=name!=="budget";
   $("#floatingAdd").hidden=name!=="budget";
   $("#backToPortal").hidden=false;
@@ -866,7 +864,30 @@ $("#openAgendaModule").addEventListener("click",()=>openModule("agenda"));
 $("#openCarModule").addEventListener("click",()=>openModule("car"));
 $("#backToPortal").addEventListener("click",showPortal);
 
-async function initialize(){try{updateLastExportInfo();await migrateLegacyLocalStorage(LEGACY_STORAGE_KEY);await loadRecurringExpenses();state.agenda=normalizeAgenda(await getSetting(AGENDA_KEY,null));renderAgenda();await initializeMyCar(showToast);state.transactions=(await getAllTransactions()).filter(item=>item.type!=="income");await materializeRecurringExpenses(state.selectedMonth);state.budgetLimit=await loadBudget(state.selectedMonth);render();showPortal();}catch(error){console.error(error);showToast("Impossible de charger les données locales");render();showPortal();}}
+async function initialize(){
+  try {
+    updateLastExportInfo();
+    await migrateLegacyLocalStorage(LEGACY_STORAGE_KEY);
+    await loadRecurringExpenses();
+    state.agenda=normalizeAgenda(await getSetting(AGENDA_KEY,null));
+    renderAgenda();
+    await initializeMyCar(showToast);
+    state.transactions=(await getAllTransactions()).filter(item=>item.type!=="income");
+    await materializeRecurringExpenses(state.selectedMonth);
+    state.budgetLimit=await loadBudget(state.selectedMonth);
+    render();
+    showPortal();
+  } catch(error) {
+    console.error(error);
+    showToast("Impossible de charger les données locales");
+    render();
+    showPortal();
+  } finally {
+    document.body.classList.remove("app-loading");
+    $("#appSkeleton").hidden=true;
+    $("#appShell").setAttribute("aria-busy","false");
+  }
+}
 
 ["gesturestart", "gesturechange", "gestureend"].forEach(eventName => {
   document.addEventListener(eventName, event => event.preventDefault(), { passive: false });

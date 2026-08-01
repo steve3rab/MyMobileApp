@@ -8,12 +8,22 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="MyMobileApp" />
   <title>MyMobileApp</title>
-  <link rel="manifest" href="manifest.json?v=26" />
+  <link rel="manifest" href="manifest.json?v=28" />
   <link rel="apple-touch-icon" href="icon-192.svg" />
-  <link rel="stylesheet" href="style.css?v=26" />
+  <link rel="stylesheet" href="style.css?v=28" />
+  <link rel="stylesheet" href="design-system.css?v=28" />
 </head>
-<body>
-  <div class="app-shell">
+<body class="app-loading">
+  <div id="appSkeleton" class="app-skeleton" aria-label="Chargement de l’application" aria-live="polite">
+    <div class="skeleton skeleton-title"></div>
+    <div class="skeleton skeleton-hero"></div>
+    <div class="skeleton-grid">
+      <div class="skeleton skeleton-card"></div>
+      <div class="skeleton skeleton-card"></div>
+      <div class="skeleton skeleton-card"></div>
+    </div>
+  </div>
+  <div id="appShell" class="app-shell" aria-busy="true">
     <header class="topbar">
       <div>
         <p class="eyebrow">MyMobileApp</p>
@@ -54,6 +64,23 @@
             <b>&rsaquo;</b>
           </button>
         </div>
+        <section id="settingsSection" class="card settings-card portal-backup reveal">
+          <div class="section-heading">
+            <div>
+              <span class="muted">Données</span>
+              <h2>Sauvegarde et restauration</h2>
+            </div>
+          </div>
+          <p class="portal-backup-help">Sauvegarde l’ensemble de MyBudget, MyAgenda et MyCar dans un fichier local.</p>
+          <div class="action-grid">
+            <button id="exportData" class="secondary-button" type="button">Exporter JSON</button>
+            <label class="secondary-button file-label">
+              Importer JSON
+              <input id="importData" type="file" accept="application/json" hidden />
+            </label>
+          </div>
+          <p id="lastExportInfo" class="last-export-info">Aucun export effectué sur cet appareil.</p>
+        </section>
         <details class="portal-tools">
           <summary>
             <span>
@@ -257,24 +284,6 @@
         </section>
       </div>
 
-      <div id="settingsModule" class="module-view" hidden>
-      <section id="settingsSection" class="card settings-card reveal">
-        <div class="section-heading">
-          <div>
-            <span class="muted">Données</span>
-            <h2>Sauvegarde et restauration</h2>
-          </div>
-        </div>
-        <div class="action-grid">
-          <button id="exportData" class="secondary-button">Exporter JSON</button>
-          <label class="secondary-button file-label">
-            Importer JSON
-            <input id="importData" type="file" accept="application/json" hidden />
-          </label>
-        </div>
-        <p id="lastExportInfo" class="last-export-info">Aucun export effectué sur cet appareil.</p>
-      </section>
-      </div>
     </main>
 
     <button id="floatingAdd" hidden class="floating-add" aria-label="Ajouter une opération">+</button>
@@ -288,9 +297,6 @@
       </button>
       <button class="nav-item" data-section="history">
         <span>≡</span><small>Historique</small>
-      </button>
-      <button class="nav-item" data-section="settings">
-        <span>⚙</span><small>Réglages</small>
       </button>
     </nav>
   </div>
@@ -314,7 +320,7 @@
       </label>
       <label>Montant
         <div class="money-input">
-          <input id="transactionAmount" type="number" min="0.01" step="0.01" placeholder="0,00" required />
+          <input id="transactionAmount" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="0,00" required />
           <span>€</span>
         </div>
       </label>
@@ -349,7 +355,7 @@
       </div>
       <label>Montant disponible
         <div class="money-input">
-          <input id="budgetInput" type="number" min="0" step="10" required />
+          <input id="budgetInput" type="number" inputmode="decimal" min="0" step="10" required />
           <span>€</span>
         </div>
       </label>
@@ -385,13 +391,13 @@
         </label>
         <label>Prix
           <div class="money-input">
-            <input id="carMaintenancePrice" type="number" min="0" max="1000000" step="0.01" placeholder="0,00" required />
+            <input id="carMaintenancePrice" type="number" inputmode="decimal" min="0" max="1000000" step="0.01" placeholder="0,00" required />
             <span>€</span>
           </div>
         </label>
       </div>
       <label>Kilométrage <span class="optional-label">optionnel</span>
-        <input id="carMaintenanceMileage" type="number" min="0" max="5000000" step="1" placeholder="Ex. 85 000" />
+        <input id="carMaintenanceMileage" type="number" inputmode="numeric" min="0" max="5000000" step="1" placeholder="Ex. 85 000" />
       </label>
       <label>Prochaine échéance <span class="optional-label">optionnel</span>
         <input id="carMaintenanceNextDate" type="date" />
@@ -407,6 +413,6 @@
   </dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
-  <script type="module" src="app.js?v=26"></script>
+  <script type="module" src="app.js?v=28"></script>
 </body>
 </html>
